@@ -1,0 +1,45 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Board</title>
+    <link rel="stylesheet" href="styles.css">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.1/css/all.min.css">
+</head>
+<body>
+    <main class="container" style="text-align: center;">
+        <h1 id="inupText">Sign In</h1>
+        <h4>To IRL Task Manager</h4>
+
+        <!-- show/hide login vs signup forms as applicable -->
+        <article id="login" style="text-align: left;">
+            <h6>Log in to an existing acount.</h6>
+            <form id="loginForm">
+                <label for="loginEmail">Email:</label><br>
+                <input type="email" id="loginEmail" name="loginEmail" required><br><br>
+                <label for="loginPassword">Password:</label><br>
+                <input type="password" id="loginPassword" name="loginPassword" required><br><br>
+                <button type="button" id="loginButton" disabled>Sign In</button>
+            </form>
+            <a href="#" id="forgotPassword">Forgot Password?</a><br>
+            Don't have an account? <a href="#" id="showSignup">Sign Up</a>
+        </article>
+            
+        <article id="signup" style="text-align: left;">
+            <h6>Sign up for a new account.</h6>
+            <form id="signupForm">
+                <label for="signupFullName">Full Name:</label><br>
+                <input type="text" id="signupFullName" name="signupFullName" required><br><br>
+                <label for="signupEmail">Email:</label><br>
+                <input type="email" id="signupEmail" name="signupEmail" required><br><br>
+                <label for="signupPassword">Password:</label><br>
+                <input type="password" id="signupPassword" name="signupPassword" required><br><br>
+                <button type="button" id="signupButton" disabled>Sign Up</button>
+            </form>
+            Already have an account? <a href="#" id="showLogin">Log In</a>
+        </article>
+    </main>
+    <script type="module" src="signin.js"></script>
+</body>
+</html>

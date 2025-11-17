@@ -1,0 +1,14 @@
+Locations:
+    IRL 1 (color: blue)
+    IRL 2 (color: red)
+    Remote (color: indigo)
+    *Custom Location* (set from task creation) (color: green)
+
+Categories:
+    Workshop (icon: hammer)
+    Maintenence (icon: broom)
+    Project (icon: compass-drafting)
+    Media (icon: camera)
+    Event (icon: user)
+    Other (icon: circle-info)
+

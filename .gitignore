@@ -1,0 +1,26 @@
+# Node modules (if you add npm later)
+node_modules/
+
+# Environment variables (if you decide to use them)
+.env
+.env.local
+
+# IDE specific files
+.vscode/
+.idea/
+*.swp
+*.swo
+*~
+
+# OS specific files
+.DS_Store
+Thumbs.db
+
+# Log files
+*.log
+npm-debug.log*
+yarn-debug.log*
+yarn-error.log*
+
+# Firebase config - contains API keys
+firebase-config.js

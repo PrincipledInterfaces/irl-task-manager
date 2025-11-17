@@ -1,0 +1,141 @@
+PICO CSS - AVAILABLE HTML ELEMENTS & STYLING GUIDE
+==================================================
+
+SETUP:
+------
+Add to <head>: <link rel="stylesheet" href="styles.css">
+
+
+CARD/BOX ELEMENTS (Rounded corners, background, padding):
+----------------------------------------------------------
+<article>       - Primary card/box element with rounded corners, shadow, padding
+                  Perfect for content cards, panels, forms
+
+<aside>         - Secondary card/box element, typically for sidebar content
+                  Has rounded corners and distinct background
+
+<dialog>        - Modal box with backdrop, rounded corners
+                  Use with open attribute or JavaScript
+
+<details>       - Collapsible box with rounded corners
+  <summary>     - Clickable header for the details element
+
+<fieldset>      - Form section box with border
+  <legend>      - Title for the fieldset
+
+<form>          - Form container with padding and styling
+
+
+TYPOGRAPHY:
+-----------
+<h1> to <h6>    - Headings with modern hierarchy
+<p>             - Paragraphs with optimal spacing
+<strong>, <b>   - Bold text
+<em>, <i>       - Italic text
+<mark>          - Highlighted text
+<small>         - Smaller text
+<del>           - Strikethrough text
+<ins>           - Underlined text
+<sub>, <sup>    - Subscript and superscript
+<abbr>          - Abbreviations with dotted underline
+<blockquote>    - Styled quote blocks with left border
+<code>          - Inline code with background
+<pre>           - Code blocks with background and padding
+<kbd>           - Keyboard input styling
+
+
+LISTS:
+------
+<ul>            - Unordered bullet lists
+<ol>            - Ordered numbered lists
+<li>            - List items
+<dl>            - Definition list
+  <dt>          - Definition term
+  <dd>          - Definition description
+
+
+FORMS:
+------
+<input>         - Text inputs (types: text, email, password, number, date,
+                  time, search, tel, url, color, range)
+<textarea>      - Multi-line text input
+<select>        - Dropdown menus
+  <option>      - Dropdown options
+<button>        - Styled buttons (variants: default, contrast, secondary)
+<label>         - Form labels
+<input type="checkbox">  - Styled checkboxes
+<input type="radio">     - Styled radio buttons
+<progress>      - Progress bars
+<meter>         - Meter/gauge elements
+
+
+TABLES:
+-------
+<table>         - Table with borders and spacing
+  <thead>       - Table header section
+  <tbody>       - Table body section
+  <tfoot>       - Table footer section
+  <tr>          - Table rows
+  <th>          - Header cells
+  <td>          - Data cells
+
+
+INTERACTIVE:
+------------
+<a>             - Links with hover effects
+<button>        - Clickable buttons
+<details>       - Collapsible accordions
+  <summary>     - Accordion trigger
+<dialog>        - Modal dialogs
+
+
+STRUCTURAL:
+-----------
+<header>        - Page/section header
+<nav>           - Navigation container (automatically styles <ul> inside)
+<main>          - Main content area
+<section>       - Content sections
+<footer>        - Page/section footer
+<figure>        - Image container with caption support
+  <figcaption>  - Image caption
+<hr>            - Horizontal divider line
+
+
+MEDIA:
+------
+<img>           - Responsive images (auto max-width: 100%)
+<video>         - Styled video player
+<audio>         - Styled audio player
+
+
+CONTAINERS:
+-----------
+<div>           - Generic container
+                  Use with class="container" for centered max-width layout
+                  Use with class="grid" for responsive grid layout
+<span>          - Inline container
+
+
+SPECIAL PICO FEATURES:
+----------------------
+- Automatic dark mode based on system preferences
+- All elements are responsive by default
+- Forms have validation states (valid/invalid)
+- Buttons support role="button" on <a> tags
+- Add data-theme="light" or "dark" to <html> to force theme
+- Use class="contrast" on buttons for alternative styling
+- Use class="secondary" on buttons for secondary styling
+- Use class="outline" on buttons for outline styling
+
+
+EXAMPLE CARD USAGE:
+-------------------
+<article>
+  <h2>Card Title</h2>
+  <p>This is automatically a beautiful card with rounded corners!</p>
+</article>
+
+<details>
+  <summary>Click to expand</summary>
+  <p>Hidden content in a collapsible box</p>
+</details>
