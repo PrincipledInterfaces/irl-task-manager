@@ -1,0 +1,176 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Manager Dashboard</title>
+    <link rel="stylesheet" href="styles.css">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.1/css/all.min.css">
+    <style>
+        /* Chrome-style tabs */
+        .tab-container {
+            display: flex;
+            gap: 4px;
+            margin-bottom: 0;
+            padding: 0;
+            list-style: none;
+            background: transparent;
+            border-bottom: 2px solid var(--pico-muted-border-color);
+        }
+
+        .tab-container li {
+            margin: 0;
+            padding: 0;
+        }
+
+        .tab-button {
+            position: relative;
+            padding: 0.75rem 1.5rem;
+            border: none;
+            background: var(--pico-card-background-color);
+            color: var(--pico-muted-color);
+            cursor: pointer;
+            border-radius: 0.5rem 0.5rem 0 0;
+            margin-bottom: -2px;
+            border: 2px solid transparent;
+            border-bottom: none;
+            transition: all 0.15s ease-in-out;
+            font-weight: 500;
+        }
+
+        .tab-button:hover {
+            background: var(--pico-secondary-background);
+            color: var(--pico-color);
+        }
+
+        .tab-button.active {
+            background: var(--pico-background-color);
+            color: var(--pico-color);
+            border-color: var(--pico-muted-border-color);
+            border-bottom-color: var(--pico-background-color);
+            font-weight: 600;
+        }
+
+        .tab-button.active::after {
+            content: '';
+            position: absolute;
+            bottom: -2px;
+            left: 0;
+            right: 0;
+            height: 2px;
+            background: var(--pico-background-color);
+        }
+
+        .tab-content {
+            display: none;
+            padding: 1.5rem 0;
+        }
+
+        .tab-content.active {
+            display: block;
+        }
+
+        /* Folder-inspired accent */
+        .tab-button::before {
+            content: '';
+            position: absolute;
+            top: -4px;
+            left: 12px;
+            width: 30px;
+            height: 4px;
+            background: var(--pico-primary);
+            border-radius: 2px 2px 0 0;
+            opacity: 0;
+            transition: opacity 0.15s ease-in-out;
+        }
+
+        .tab-button.active::before {
+            opacity: 1;
+        }
+
+        /* Progress bar styling with fade-in */
+        progress {
+            height: 1.2rem;
+            animation: fadeIn 0.5s ease-in;
+        }
+
+        progress::-webkit-progress-value {
+            background-color: var(--pico-primary);
+        }
+
+        progress::-moz-progress-bar {
+            background-color: var(--pico-primary);
+        }
+
+        @keyframes fadeIn {
+            from { opacity: 0; }
+            to { opacity: 1; }
+        }
+    </style>
+</head>
+<body>
+    <main class="container">
+        <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 1rem;">
+            <h1>Manager Dashboard</h1>
+            <div style="display: flex; gap: 10px;">
+                <button style="background-color: rgb(255, 93, 93); border-color: rgb(255, 93, 93);"><i class="fa-solid fa-user"></i> Log Out</button>
+            </div>
+        </div>
+
+        <!-- Chrome-style tabs -->
+        <ul class="tab-container">
+            <li><button class="tab-button active" data-tab="overview"><i class="fa-solid fa-chart-line"></i> Overview</button></li>
+            <li><button class="tab-button" data-tab="tasks"><i class="fa-solid fa-list-check"></i> Tasks</button></li>
+            <li><button class="tab-button" data-tab="team"><i class="fa-solid fa-users"></i> Team</button></li>
+        </ul>
+
+        <!-- Tab content panels -->
+        <div id="overview" class="tab-content active">
+            <h2>Overview</h2>
+            <article id="weeklySection">
+                <strong id="weeklyText">Using 30 of 450 hours this week.</strong>
+                <progress value="0" max="100" id="weeklyBar"></progress>
+            </article>
+            <article id="quarterlySection">
+                <strong id="quarterlyText">Using 473 of 7,850 hours this quarter.</strong>
+                <progress value="0" max="100" id="quarterlyBar"></progress>
+            </article>
+            <article id="yearlySection">
+                <strong id="yearlyText">Using 1,200 of 31,536 hours this year.</strong>
+                <progress value="0" max="100" id="yearlyBar"></progress>
+            </article>
+            Hour usage is based on tasks marked as 'complete'.
+        </div>
+
+        <div id="tasks" class="tab-content">
+            <h2>Tasks Management</h2>
+            <p>Tasks content goes here...</p>
+        </div>
+
+        <div id="team" class="tab-content">
+            <h2>Team Management</h2>
+            <p>Team content goes here...</p>
+        </div>
+    </main>
+
+    <script type="module">
+        // Tab switching functionality
+        const tabButtons = document.querySelectorAll('.tab-button');
+        const tabContents = document.querySelectorAll('.tab-content');
+
+        tabButtons.forEach(button => {
+            button.addEventListener('click', () => {
+                const targetTab = button.getAttribute('data-tab');
+
+                // Remove active class from all buttons and contents
+                tabButtons.forEach(btn => btn.classList.remove('active'));
+                tabContents.forEach(content => content.classList.remove('active'));
+
+                // Add active class to clicked button and corresponding content
+                button.classList.add('active');
+                document.getElementById(targetTab).classList.add('active');
+            });
+        });
+    </script>
+</body>
+</html>

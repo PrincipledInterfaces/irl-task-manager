@@ -88,7 +88,7 @@ async function createAccount(email, password, fullName) {
         alert("Account created successfully! Please sign in.");
 
         // Redirect to signin page after successful signup
-        window.location.href = "signin.html";
+        window.location.href = "staff.js";
     } catch (error) {
         console.error("Error creating account:", error);
         console.error("Error code:", error.code);
@@ -121,7 +121,7 @@ async function login(email, password) {
                 window.location.href = "managerdash.html";
             } else {
                 console.log("Redirecting to user dashboard...");
-                window.location.href = "userdash.html";
+                window.location.href = "staff";
             }
         } else {
             console.error("User document does not exist in Firestore!");

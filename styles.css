@@ -67,6 +67,24 @@
   margin-top: 1rem;
 }
 
+/* Smooth animations for details dropdown */
+details summary {
+  cursor: pointer;
+  list-style: none;
+}
+
+details summary::-webkit-details-marker {
+  display: none;
+}
+
+.details-content {
+  overflow: hidden;
+  transition: height 0.2s ease-in-out, opacity 0.2s ease-in-out;
+  padding: 0;
+  margin: 0;
+  will-change: height, opacity;
+}
+
 /* HTML: <div class="loader"></div> */
 .loader {
   width: fit-content;
@@ -111,4 +129,8 @@ body {
 /* respect user motion preferences */
 @media (prefers-reduced-motion: reduce) {
   body { animation: none; }
+}
+
+progress {
+  height: 1.5rem; /* Default is usually around 0.5rem */
 }

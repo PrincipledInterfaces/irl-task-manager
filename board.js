@@ -23,7 +23,7 @@ onAuthStateChanged(auth, async (user) => {
         }
     } else {
         // No user logged in, redirect to signin
-        window.location.href = "signin.html";
+        window.location.href = "signin";
     }
 });
 
@@ -116,9 +116,10 @@ function renderJobCard(task) {
             <h6>Due: <span class="badge badge-purple"><i class="fa-regular fa-calendar"></i> ${formatDueDate(task.due)}</span></h6>
             <h6>Location: <span class="badge badge-${task.locationColor}"><i class="fa-solid fa-location-dot"></i> ${task.location}</span></h6>
             <details>
-                <article>
+                <summary>View Description</summary>
+                <div class="details-content">
                     <p>${task.description}</p>
-                </article>
+                </div>
             </details>
             ${assignmentSection}
         </article>
@@ -144,6 +145,69 @@ function renderBoard() {
 
     // Attach event listeners to claim buttons
     attachClaimListeners();
+
+    // Setup smooth animations for details elements
+    setupDetailsAnimations();
+}
+
+// Setup smooth animations for details dropdowns
+function setupDetailsAnimations() {
+    const detailsElements = document.querySelectorAll('details');
+
+    detailsElements.forEach(details => {
+        const summary = details.querySelector('summary');
+        const content = details.querySelector('.details-content');
+
+        summary.addEventListener('click', (e) => {
+            e.preventDefault();
+
+            if (details.hasAttribute('open')) {
+                // Closing
+                const startHeight = content.scrollHeight;
+                content.style.height = startHeight + 'px';
+
+                // Force browser to acknowledge the height
+                content.offsetHeight;
+
+                details.classList.add('is-closing');
+                content.style.height = '0px';
+                content.style.opacity = '0';
+
+                const onTransitionEnd = (e) => {
+                    if (e.propertyName === 'height') {
+                        requestAnimationFrame(() => {
+                            details.removeAttribute('open');
+                            details.classList.remove('is-closing');
+                        });
+                        content.removeEventListener('transitionend', onTransitionEnd);
+                    }
+                };
+                content.addEventListener('transitionend', onTransitionEnd);
+            } else {
+                // Opening
+                details.setAttribute('open', '');
+                details.classList.add('is-opening');
+                const endHeight = content.scrollHeight;
+                content.style.height = '0px';
+                content.style.opacity = '0';
+
+                requestAnimationFrame(() => {
+                    requestAnimationFrame(() => {
+                        content.style.height = endHeight + 'px';
+                        content.style.opacity = '1';
+                    });
+                });
+
+                const onTransitionEnd = (e) => {
+                    if (e.propertyName === 'height') {
+                        details.classList.remove('is-opening');
+                        content.removeEventListener('transitionend', onTransitionEnd);
+                    }
+                };
+                content.addEventListener('transitionend', onTransitionEnd);
+            }
+        });
+    });
 }
 
 // Handle claim button clicks
