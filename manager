@@ -144,7 +144,7 @@
 
         <div id="tasks" class="tab-content">
             <h2>Tasks Management</h2>
-            <p>Tasks content goes here...</p>
+            <h5 id="taskGreeting">Hi Ben, there are 0 active tasks.</h5>
         </div>
 
         <div id="team" class="tab-content">
