@@ -1,0 +1,38 @@
+// Access anywhere in manager.js after it's loaded
+  console.log(budgetData.weeklyBudget);
+  console.log(budgetData.quarterlyBudget);
+  console.log(budgetData.yearlyBudget);
+  console.log(budgetData.avgPay);
+
+  // Example: Calculate hours based on budget
+  const weeklyHours = budgetData.weeklyBudget / budgetData.avgPay;
+
+  Write Budget Data
+
+  // Update one or more fields
+  await updateBudgetData({
+      weeklyBudget: 1000
+  });
+
+  // Update multiple fields at once
+  await updateBudgetData({
+      weeklyBudget: 1000,
+      quarterlyBudget: 13000,
+      avgPay: 25
+  });
+
+  Example Usage
+
+  // In a button click handler
+  async function handleBudgetUpdate() {
+      try {
+          await updateBudgetData({
+              weeklyBudget: 5000
+          });
+          alert("Budget updated successfully!");
+      } catch (error) {
+          alert("Error updating budget: " + error.message);
+      }
+  }
+
+  The budgetData variable is now loaded on page load and available throughout manager.js!

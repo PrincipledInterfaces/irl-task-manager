@@ -4,6 +4,7 @@ node_modules/
 # Environment variables (if you decide to use them)
 .env
 .env.local
+.claude/
 
 # IDE specific files
 .vscode/

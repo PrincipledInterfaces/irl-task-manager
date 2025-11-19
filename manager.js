@@ -251,8 +251,19 @@ function openUserDialog(userId) {
         tasksArticle.innerHTML = '<p style="color: #888;">No active tasks</p>';
     } else {
         tasksArticle.innerHTML = userTasks.map(task =>
-            `<span class="badge badge-gray"><i class="fa-solid fa-${task.icon || 'list'}"></i> ${task.title} | ${task.hours} Hrs</span><br>`
+            `<span class="badge badge-gray"><i class="fa-solid fa-${task.icon || 'list'}"></i> ${task.title} | ${task.hours} Hrs <a href="#" class="hoveranim delete-assignment" data-task-id="${task.id}"><i class="fa-solid fa-x"></i></a></span><br>`
         ).join('');
+
+        // Attach delete assignment listeners
+        setTimeout(() => {
+            dialog.querySelectorAll('.delete-assignment').forEach(link => {
+                link.addEventListener('click', (e) => {
+                    e.preventDefault();
+                    const taskId = link.getAttribute('data-task-id');
+                    removeUserFromTask(taskId);
+                });
+            });
+        }, 0);
     }
 
     // Render skills
@@ -422,6 +433,45 @@ async function removeSkill(skill) {
     } catch (error) {
         console.error("Error removing skill:", error);
         alert("Error removing skill: " + error.message);
+    }
+}
+
+// Remove user from a task assignment
+async function removeUserFromTask(taskId) {
+    if (!selectedUser) return;
+
+    const task = allTasks.find(t => t.id === taskId);
+    if (!task) return;
+
+    if (!confirm(`Remove ${selectedUser.fullName} from "${task.title}"?`)) {
+        return;
+    }
+
+    try {
+        // Update Firestore - remove user from assignedTo and assignedToNames arrays
+        await updateDoc(doc(db, "tasks", taskId), {
+            assignedTo: arrayRemove(selectedUser.id),
+            assignedToNames: arrayRemove(selectedUser.fullName)
+        });
+
+        // Update local data
+        const taskIndex = allTasks.findIndex(t => t.id === taskId);
+        if (taskIndex !== -1) {
+            if (allTasks[taskIndex].assignedTo) {
+                allTasks[taskIndex].assignedTo = allTasks[taskIndex].assignedTo.filter(id => id !== selectedUser.id);
+            }
+            if (allTasks[taskIndex].assignedToNames) {
+                allTasks[taskIndex].assignedToNames = allTasks[taskIndex].assignedToNames.filter(name => name !== selectedUser.fullName);
+            }
+        }
+
+        // Re-open the dialog to refresh the task list
+        openUserDialog(selectedUser.id);
+
+        console.log(`${selectedUser.fullName} removed from task "${task.title}"`);
+    } catch (error) {
+        console.error("Error removing user from task:", error);
+        alert("Error removing assignment: " + error.message);
     }
 }
 
