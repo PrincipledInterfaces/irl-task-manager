@@ -1,7 +1,7 @@
 import { auth, db } from './firebase-config.js';
 import { onAuthStateChanged, signOut } from "https://www.gstatic.com/firebasejs/12.6.0/firebase-auth.js";
 import { collection, getDocs, doc, getDoc, updateDoc, arrayUnion, arrayRemove } from "https://www.gstatic.com/firebasejs/12.6.0/firebase-firestore.js";
-import { getPageUrl } from './utils.js';
+import { getPageUrl, getApiUrl } from './utils.js';
 
 let currentUser = null;
 let allUsers = [];
@@ -392,7 +392,7 @@ async function confirmDeleteUser() {
         console.log(`Calling server to delete user: ${selectedUser.fullName} (${selectedUser.id})`);
 
         // Call your custom server endpoint
-        const response = await fetch('/api/delete-user', {
+        const response = await fetch(getApiUrl('delete-user'), {
             method: 'POST',
             headers: {
                 'Content-Type': 'application/json',
