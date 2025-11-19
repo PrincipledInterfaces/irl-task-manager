@@ -11,8 +11,25 @@ app.use(cors());
 app.use(express.json());
 
 // Initialize Firebase Admin SDK
-// Service account key should be stored in FIREBASE_SERVICE_ACCOUNT_KEY env variable
-const serviceAccount = JSON.parse(process.env.FIREBASE_SERVICE_ACCOUNT_KEY);
+// Try to load from service-account-key.json file, fallback to env variable
+let serviceAccount;
+try {
+  const fs = require('fs');
+  const path = require('path');
+  const keyPath = path.join(__dirname, 'service-account-key.json');
+  serviceAccount = JSON.parse(fs.readFileSync(keyPath, 'utf8'));
+  console.log('Loaded service account from service-account-key.json');
+} catch (error) {
+  // Fallback to environment variable
+  if (process.env.FIREBASE_SERVICE_ACCOUNT_KEY) {
+    serviceAccount = JSON.parse(process.env.FIREBASE_SERVICE_ACCOUNT_KEY);
+    console.log('Loaded service account from environment variable');
+  } else {
+    console.error('Error: No service account key found!');
+    console.error('Please create service-account-key.json or set FIREBASE_SERVICE_ACCOUNT_KEY');
+    process.exit(1);
+  }
+}
 
 admin.initializeApp({
   credential: admin.credential.cert(serviceAccount),
