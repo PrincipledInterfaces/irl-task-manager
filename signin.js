@@ -1,6 +1,7 @@
 import { createUserWithEmailAndPassword, signInWithEmailAndPassword, sendPasswordResetEmail } from "https://www.gstatic.com/firebasejs/12.6.0/firebase-auth.js";
 import { doc, setDoc, getDoc } from "https://www.gstatic.com/firebasejs/12.6.0/firebase-firestore.js";
 import { auth, db } from './firebase-config.js';
+import { getPageUrl } from './utils.js';
 
 document.getElementById("signup").hidden = true; //Hides signup form initially
 
@@ -88,7 +89,7 @@ async function createAccount(email, password, fullName) {
         alert("Account created successfully! Please sign in.");
 
         // Redirect to signin page after successful signup
-        window.location.href = "staff.html";
+        window.location.href = getPageUrl("staff");
     } catch (error) {
         console.error("Error creating account:", error);
         console.error("Error code:", error.code);
@@ -118,10 +119,10 @@ async function login(email, password) {
             // Redirect based on user role
             if (userData.role === "manager") {
                 console.log("Redirecting to manager dashboard...");
-                window.location.href = "managerdash.html";
+                window.location.href = getPageUrl("manager");
             } else {
                 console.log("Redirecting to user dashboard...");
-                window.location.href = "staff.html";
+                window.location.href = getPageUrl("staff");
             }
         } else {
             console.error("User document does not exist in Firestore!");

@@ -1,6 +1,7 @@
 import { auth, db } from './firebase-config.js';
 import { onAuthStateChanged, signOut } from "https://www.gstatic.com/firebasejs/12.6.0/firebase-auth.js";
 import { collection, getDocs, doc, getDoc, updateDoc, arrayUnion, arrayRemove } from "https://www.gstatic.com/firebasejs/12.6.0/firebase-firestore.js";
+import { getPageUrl } from './utils.js';
 
 let currentUser = null;
 let allUsers = [];
@@ -37,7 +38,7 @@ onAuthStateChanged(auth, async (user) => {
             // Check if user is a manager
             if (currentUser.role !== "manager") {
                 alert("Access denied. Manager privileges required.");
-                window.location.href = "staff.html";
+                window.location.href = getPageUrl("staff");
                 return;
             }
 
@@ -57,7 +58,7 @@ onAuthStateChanged(auth, async (user) => {
             setupTabs();
         }
     } else {
-        window.location.href = "signin.html";
+        window.location.href = getPageUrl("signin");
     }
 });
 

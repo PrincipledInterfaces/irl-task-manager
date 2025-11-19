@@ -1,6 +1,7 @@
 import { auth, db } from './firebase-config.js';
 import { onAuthStateChanged, signOut } from "https://www.gstatic.com/firebasejs/12.6.0/firebase-auth.js";
 import { collection, getDocs, doc, getDoc, updateDoc, arrayRemove } from "https://www.gstatic.com/firebasejs/12.6.0/firebase-firestore.js";
+import { getPageUrl } from './utils.js';
 
 let currentUser = null;
 let tasksData = [];
@@ -30,7 +31,7 @@ onAuthStateChanged(auth, async (user) => {
         }
     } else {
         // No user logged in, redirect to signin
-        window.location.href = "signin.html";
+        window.location.href = getPageUrl("signin");
     }
 });
 
