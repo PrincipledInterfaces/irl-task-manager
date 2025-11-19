@@ -7,6 +7,7 @@ let currentUser = null;
 let allUsers = [];
 let allTasks = [];
 let selectedUser = null;
+let budgetData = null;
 
 // Available skills from skills.txt
 const AVAILABLE_SKILLS = [
@@ -47,6 +48,7 @@ onAuthStateChanged(auth, async (user) => {
             // Load data
             await loadAllUsers();
             await loadAllTasks();
+            await loadBudgetData();
 
             // Render team list
             renderTeamList();
@@ -56,6 +58,9 @@ onAuthStateChanged(auth, async (user) => {
 
             // Setup tab switching
             setupTabs();
+
+            // Render hours
+            renderHours();
         }
     } else {
         window.location.href = getPageUrl("signin");
@@ -126,6 +131,58 @@ async function loadAllTasks() {
         console.log("Tasks loaded:", allTasks.length, "tasks found");
     } catch (error) {
         console.error("Error loading tasks:", error);
+    }
+}
+
+// Load budget data from Firestore
+async function loadBudgetData() {
+    try {
+        console.log("Loading budget data from Firestore...");
+        const dataCollection = collection(db, "data");
+        const dataSnapshot = await getDocs(dataCollection);
+
+        if (!dataSnapshot.empty) {
+            // Get the first (and only) document
+            const dataDoc = dataSnapshot.docs[0];
+            budgetData = {
+                id: dataDoc.id,
+                ...dataDoc.data()
+            };
+            console.log("Budget data loaded:", budgetData);
+        } else {
+            console.warn("No budget data found in 'data' collection");
+            budgetData = {
+                quarterlyBudget: 0,
+                weeklyBudget: 0,
+                yearlyBudget: 0,
+                avgPay: 0
+            };
+        }
+    } catch (error) {
+        console.error("Error loading budget data:", error);
+    }
+}
+
+// Update budget data in Firestore
+async function updateBudgetData(updates) {
+    try {
+        if (!budgetData || !budgetData.id) {
+            console.error("Budget data not loaded yet");
+            return;
+        }
+
+        await updateDoc(doc(db, "data", budgetData.id), updates);
+
+        // Update local copy
+        budgetData = {
+            ...budgetData,
+            ...updates
+        };
+
+        console.log("Budget data updated:", updates);
+    } catch (error) {
+        console.error("Error updating budget data:", error);
+        throw error;
     }
 }
 
@@ -366,6 +423,38 @@ async function removeSkill(skill) {
         console.error("Error removing skill:", error);
         alert("Error removing skill: " + error.message);
     }
+}
+
+function renderHours() {
+    var totalHoursYear = 0;
+    var totalHoursQuarter = 0;
+    var totalHoursWeek = 0;
+
+    allTasks.forEach(function(element, index, array) {
+        console.log(`Element at index ${index}: ${element}`);
+        //check if completed element is within current week, quarter, year
+        if (element.completed && element.due && isDateInCurrentYear(new Date(element.due.toDate()))) {
+            totalHoursYear += element.hours || 0;
+            if (isDateInCurrentQuarter(new Date(element.due.toDate()))) {
+                totalHoursQuarter += element.hours || 0;
+                if (isDateInCurrentWeek(new Date(element.due.toDate()))) {
+                    totalHoursWeek += element.hours || 0;
+                }
+            }   
+        }
+
+        document.getElementById("weeklyBar").value = totalHoursWeek;
+        document.getElementById("weeklyBar").max = budgetData.weeklyBudget;
+        document.getElementById("weeklyText").innerText = "Using "+totalHoursWeek+" of "+budgetData.weeklyBudget+" hours this week.";
+
+        document.getElementById("quarterlyBar").value = totalHoursQuarter;
+        document.getElementById("quarterlyBar").max = budgetData.quarterlyBudget;
+        document.getElementById("quarterlyText").innerText = "Using "+totalHoursQuarter+" of "+budgetData.quarterlyBudget+" hours this quarter.";
+
+        document.getElementById("yearlyBar").value = totalHoursYear;
+        document.getElementById("yearlyBar").max = budgetData.yearlyBudget;
+        document.getElementById("yearlyText").innerText = "Using "+totalHoursYear+" of "+budgetData.yearlyBudget+" hours this year.";
+    });
 }
 
 // Confirm and delete user
