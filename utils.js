@@ -5,6 +5,11 @@ export function getPageUrl(page) {
                     window.location.hostname === 'localhost' ||
                     window.location.hostname === '127.0.0.1';
 
-    // Add .html extension for local development
-    return isLocal ? `${page}.html` : page;
+    // Get the base path from current URL (e.g., /tasks/ if site is in subdirectory)
+    const currentPath = window.location.pathname;
+    const basePath = currentPath.substring(0, currentPath.lastIndexOf('/') + 1);
+
+    // Build the URL
+    const fileName = isLocal ? `${page}.html` : page;
+    return `${basePath}${fileName}`;
 }
