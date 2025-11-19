@@ -147,7 +147,8 @@ function renderTeamList() {
             task.assignedTo && task.assignedTo.includes(user.id) && !task.completed
         );
         const taskCount = userTasks.length;
-        let badgeColor = 'green';
+        var colors = ['green', 'yellow', 'red', 'purple', 'blue', 'pink', 'indigo'];
+        let badgeColor = colors[Math.random() * colors.length | 0]; // Default random color
         if (taskCount >= 5) badgeColor = 'red';
         else if (taskCount >= 3) badgeColor = 'yellow';
 
@@ -181,10 +182,13 @@ function openUserDialog(userId) {
     );
 
     // Render active tasks
-    const tasksSection = dialog.querySelector('div[style*="width:50%"] h5');
+    const flexContainer = dialog.querySelector('div[style*="display: flex"]');
+    const allDivs = flexContainer.querySelectorAll(':scope > div');
+    const tasksDiv = allDivs[0]; // First div is tasks
+    const tasksSection = tasksDiv.querySelector('h5');
     tasksSection.textContent = `${userTasks.length} Active Task${userTasks.length !== 1 ? 's' : ''}`;
 
-    const tasksArticle = dialog.querySelector('div[style*="width:50%"] article');
+    const tasksArticle = tasksDiv.querySelector('article');
     if (userTasks.length === 0) {
         tasksArticle.innerHTML = '<p style="color: #888;">No active tasks</p>';
     } else {
@@ -203,7 +207,10 @@ function openUserDialog(userId) {
 // Render skills in dialog
 function renderSkillsInDialog() {
     const dialog = document.getElementById('editUser');
-    const skillsArticle = dialog.querySelector('div:not([style*="width:50%"]) article');
+    const flexContainer = dialog.querySelector('div[style*="display: flex"]');
+    const allDivs = flexContainer.querySelectorAll(':scope > div');
+    const skillsDiv = allDivs[1]; // Second div is skills
+    const skillsArticle = skillsDiv.querySelector('article');
 
     const userSkills = selectedUser.skills || [];
 
