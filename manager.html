@@ -150,28 +150,50 @@
 
         <div id="team" class="tab-content">
             <h2>Team Management</h2>
-            <p>Team content goes here...</p>
+            <h5>Select a person for more options.</h5>
+            <article>
+                <!-- Team members will be populated by manager.js -->
+                <div style="display:flex;justify-content:center;align-items:center;min-height:150px;">
+                    <div class="loader"></div>
+                </div>
+            </article>
         </div>
     </main>
 
-    <script type="module">
-        // Tab switching functionality
-        const tabButtons = document.querySelectorAll('.tab-button');
-        const tabContents = document.querySelectorAll('.tab-content');
+    <dialog id="editUser">
+        <article>
+            <header>
+                <button aria-label="Close" rel="prev"></button>
+                <p>
+                    <strong>View/edit person</strong>
+                </p>
+            </header>
+            <h2><i class="fa-solid fa-user"></i> Auriel Kremp</h2>
+            <hr>
+            <div style="display: flex; gap: 20px;">
+                <div style="width:50%">  
+                    <h5>4 Active Tasks</h5>
+                    <article>
+                        <span class="badge badge-gray"><i class="fa-solid fa-hammer"></i> CNC Workshop | 3 Hrs</span><br>
+                        <span class="badge badge-gray"><i class="fa-solid fa-broom"></i> Wipe Tables | 0.5 Hrs</span><br>
+                        <span class="badge badge-gray"><i class="fa-solid fa-hammer"></i> CNC Workshop | 3 Hrs</span><br>
+                    </article>
+                    <div style="text-align: left;"><button style="background-color: rgb(255, 93, 93); border-color: rgb(255, 93, 93);"><i class="fa-solid fa-trash"></i> Delete User</button></div>
+                </div>
+                <div>
+                    <h6>Skills:</h6>
+                    <article>
+                        <span class="badge badge-gray">CNC  <a href="#" class="hoveranim" id="deleteskill"><i class="fa-solid fa-x"></i></a></span>
+                        <span class="badge badge-gray">Mechanical Systems  <a href="#" class="hoveranim" id="deleteskill"><i class="fa-solid fa-x"></i></a></span>
+                        <br>
+                        <span class="badge badge-gray">Dick Jokes  <a href="#" class="hoveranim" id="deleteskill"><i class="fa-solid fa-x"></i></a></span>
+                        
+                    </article>
+                    <div style="text-align: right;"><button><i class="fa-solid fa-plus"></i> Add Skill</button></div>
+                </div>
+        </article>
+    </dialog>
 
-        tabButtons.forEach(button => {
-            button.addEventListener('click', () => {
-                const targetTab = button.getAttribute('data-tab');
-
-                // Remove active class from all buttons and contents
-                tabButtons.forEach(btn => btn.classList.remove('active'));
-                tabContents.forEach(content => content.classList.remove('active'));
-
-                // Add active class to clicked button and corresponding content
-                button.classList.add('active');
-                document.getElementById(targetTab).classList.add('active');
-            });
-        });
-    </script>
+    <script type="module" src="manager.js"></script>
 </body>
 </html>

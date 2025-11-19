@@ -24,3 +24,8 @@ yarn-error.log*
 
 # Firebase config - contains API keys
 firebase-config.js
+
+# Server environment variables and service account keys
+server/.env
+server/service-account-key.json
+**/service-account*.json

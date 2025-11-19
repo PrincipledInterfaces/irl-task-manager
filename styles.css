@@ -134,3 +134,15 @@ body {
 progress {
   height: 1.5rem; /* Default is usually around 0.5rem */
 }
+
+.hoveranim {
+  display: inline-block; /* allow transform on <a> */
+  will-change: transform;
+  transform-origin: center;
+  transition: all 0.2s ease;
+}
+.hoveranim:hover,
+.hoveranim:focus {
+  transform: scale(1.1);
+  filter: brightness(0.8);
+}
