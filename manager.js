@@ -379,11 +379,25 @@ async function confirmDeleteUser() {
         return;
     }
 
+    const dialog = document.getElementById('editUser');
+    const dialogContent = dialog.querySelector('article');
+
+    // Show loading state
+    const originalContent = dialogContent.innerHTML;
+    dialogContent.innerHTML = `
+        <div style="display:flex;justify-content:center;align-items:center;min-height:200px;flex-direction:column;gap:20px;">
+            <div class="loader"></div>
+            <p><strong>Deleting ${selectedUser.fullName}...</strong></p>
+            <p>Please wait while we remove the user from Firebase Auth and Firestore.</p>
+        </div>
+    `;
+
     try {
         // Get the current user's ID token for authentication
         const user = auth.currentUser;
         if (!user) {
             alert("You must be logged in to delete users.");
+            dialogContent.innerHTML = originalContent;
             return;
         }
 
@@ -430,6 +444,10 @@ async function confirmDeleteUser() {
         selectedUser = null;
     } catch (error) {
         console.error("Error deleting user:", error);
+
+        // Restore original content on error
+        dialogContent.innerHTML = originalContent;
+
         alert(`Error deleting user: ${error.message}`);
     }
 }
