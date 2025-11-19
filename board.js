@@ -23,7 +23,7 @@ onAuthStateChanged(auth, async (user) => {
         }
     } else {
         // No user logged in, redirect to signin
-        window.location.href = "signin";
+        window.location.href = "signin.html";
     }
 });
 
@@ -80,7 +80,7 @@ function renderJobCard(task) {
     let assignmentSection = '';
 
     if (assignedUsers.length > 0 || workerSlots > 1) {
-        assignmentSection += '<h5>Assigned to:</h5><div style="display: flex; gap: 8px; flex-wrap: wrap; margin-bottom: 10px;">';
+        assignmentSection += '<h6>Assigned to:</h6><div style="display: flex; gap: 8px; flex-wrap: wrap; margin-bottom: 10px;">';
 
         // Show assigned workers
         assignedNames.forEach(name => {

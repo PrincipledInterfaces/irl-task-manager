@@ -3,28 +3,24 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>My Tasks</title>
+    <title>Board</title>
     <link rel="stylesheet" href="styles.css">
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.1/css/all.min.css">
+    <link rel="icon" type="image/png" href="head.png">
 </head>
 <body>
     <main class="container">
         <div style="display: flex; justify-content: space-between; align-items: center;">
-            <h1>My Tasks</h1>
-            <div style="display: flex; gap: 10px;">
-                <a href="board"><button><i class="fa-solid fa-border-all"></i> Available Tasks</button></a>
-                <button style="background-color: rgb(255, 93, 93); border-color: rgb(255, 93, 93);"><i class="fa-solid fa-user"></i> Log Out</button>
-            </div>
+            <h1>Board Listings</h1>
+            <a href="staff.html"><button><i class="fa-solid fa-square-poll-horizontal"></i> My Tasks</button></a>
         </div>
-        <br>
-        <h5 id="nameText">Hello, you have the following tasks...</h5>
-        <div id="user-tasks">
-            <!-- Job listings will be rendered here by staff.js oh yeah-->
+        <div id="board-listings">
+            <!-- Job listings will be rendered here by board.js oh yeah-->
             <div style="display:flex;justify-content:center;align-items:center;min-height:150px;">
                 <div class="loader"></div>
             </div>
         </div>
     </main>
-    <script type="module" src="staff.js"></script>
+    <script type="module" src="board.js"></script>
 </body>
 </html>
