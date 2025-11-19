@@ -426,11 +426,17 @@ async function removeSkill(skill) {
 }
 
 function renderHours() {
+    // Check if budget data is loaded
+    if (!budgetData) {
+        console.error("Budget data not loaded yet");
+        return;
+    }
+
     var totalHoursYear = 0;
     var totalHoursQuarter = 0;
     var totalHoursWeek = 0;
 
-    allTasks.forEach(function(element, index, array) {
+    allTasks.forEach(function(element, index) {
         console.log(`Element at index ${index}: ${element}`);
         //check if completed element is within current week, quarter, year
         if (element.completed && element.due && isDateInCurrentYear(new Date(element.due.toDate()))) {
@@ -440,21 +446,22 @@ function renderHours() {
                 if (isDateInCurrentWeek(new Date(element.due.toDate()))) {
                     totalHoursWeek += element.hours || 0;
                 }
-            }   
+            }
         }
-
-        document.getElementById("weeklyBar").value = totalHoursWeek;
-        document.getElementById("weeklyBar").max = budgetData.weeklyBudget;
-        document.getElementById("weeklyText").innerText = "Using "+totalHoursWeek+" of "+budgetData.weeklyBudget+" hours this week.";
-
-        document.getElementById("quarterlyBar").value = totalHoursQuarter;
-        document.getElementById("quarterlyBar").max = budgetData.quarterlyBudget;
-        document.getElementById("quarterlyText").innerText = "Using "+totalHoursQuarter+" of "+budgetData.quarterlyBudget+" hours this quarter.";
-
-        document.getElementById("yearlyBar").value = totalHoursYear;
-        document.getElementById("yearlyBar").max = budgetData.yearlyBudget;
-        document.getElementById("yearlyText").innerText = "Using "+totalHoursYear+" of "+budgetData.yearlyBudget+" hours this year.";
     });
+
+    // Update UI after loop completes
+    document.getElementById("weeklyBar").value = totalHoursWeek;
+    document.getElementById("weeklyBar").max = budgetData.weeklyBudget;
+    document.getElementById("weeklyText").innerText = "Using "+totalHoursWeek+" of "+budgetData.weeklyBudget+" hours this week.";
+
+    document.getElementById("quarterlyBar").value = totalHoursQuarter;
+    document.getElementById("quarterlyBar").max = budgetData.quarterlyBudget;
+    document.getElementById("quarterlyText").innerText = "Using "+totalHoursQuarter+" of "+budgetData.quarterlyBudget+" hours this quarter.";
+
+    document.getElementById("yearlyBar").value = totalHoursYear;
+    document.getElementById("yearlyBar").max = budgetData.yearlyBudget;
+    document.getElementById("yearlyText").innerText = "Using "+totalHoursYear+" of "+budgetData.yearlyBudget+" hours this year.";
 }
 
 // Confirm and delete user
