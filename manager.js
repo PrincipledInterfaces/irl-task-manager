@@ -425,6 +425,34 @@ async function removeSkill(skill) {
     }
 }
 
+// Helper function to check if a date is in the current week
+function isDateInCurrentWeek(date) {
+    const now = new Date();
+    const startOfWeek = new Date(now);
+    startOfWeek.setDate(now.getDate() - now.getDay()); // Sunday
+    startOfWeek.setHours(0, 0, 0, 0);
+
+    const endOfWeek = new Date(startOfWeek);
+    endOfWeek.setDate(startOfWeek.getDate() + 7);
+
+    return date >= startOfWeek && date < endOfWeek;
+}
+
+// Helper function to check if a date is in the current quarter
+function isDateInCurrentQuarter(date) {
+    const now = new Date();
+    const currentQuarter = Math.floor(now.getMonth() / 3);
+    const dateQuarter = Math.floor(date.getMonth() / 3);
+
+    return date.getFullYear() === now.getFullYear() && dateQuarter === currentQuarter;
+}
+
+// Helper function to check if a date is in the current year
+function isDateInCurrentYear(date) {
+    const now = new Date();
+    return date.getFullYear() === now.getFullYear();
+}
+
 function renderHours() {
     // Check if budget data is loaded
     if (!budgetData) {
