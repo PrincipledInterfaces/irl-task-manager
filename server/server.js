@@ -1,8 +1,7 @@
 const express = require('express');
 const admin = require('firebase-admin');
 const cors = require('cors');
-const axios = require('axios');
-const cheerio = require('cheerio');
+const https = require('https');
 require('dotenv').config();
 
 const app = express();
@@ -50,14 +49,30 @@ app.get('/api/quarter-dates', async (req, res) => {
   try {
     console.log('Fetching DePaul academic calendar...');
 
-    // Fetch the page
-    const response = await axios.get('https://academics.depaul.edu/calendar/Pages/default.aspx', {
-      headers: {
-        'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36'
-      }
-    });
+    // Fetch the page using native https module
+    const fetchPage = () => {
+      return new Promise((resolve, reject) => {
+        https.get('https://academics.depaul.edu/calendar/Pages/default.aspx', {
+          headers: {
+            'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36'
+          }
+        }, (response) => {
+          let data = '';
 
-    const html = response.data;
+          response.on('data', (chunk) => {
+            data += chunk;
+          });
+
+          response.on('end', () => {
+            resolve(data);
+          });
+        }).on('error', (error) => {
+          reject(error);
+        });
+      });
+    };
+
+    const html = await fetchPage();
 
     // Extract the JSON data from the page
     // Look for: dpuexp.Academic_Calendar.Current_Active.Rows = [...]
