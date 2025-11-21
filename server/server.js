@@ -44,6 +44,42 @@ app.get('/health', (req, res) => {
   res.json({ status: 'ok', timestamp: new Date().toISOString() });
 });
 
+// Debug endpoint to see raw HTML
+app.get('/api/debug-calendar', async (req, res) => {
+  try {
+    const fetchPage = () => {
+      return new Promise((resolve, reject) => {
+        https.get('https://academics.depaul.edu/calendar/Pages/default.aspx', {
+          headers: {
+            'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36'
+          }
+        }, (response) => {
+          let data = '';
+          response.on('data', (chunk) => { data += chunk; });
+          response.on('end', () => { resolve(data); });
+        }).on('error', (error) => { reject(error); });
+      });
+    };
+
+    const html = await fetchPage();
+
+    // Find any variables that might contain calendar data
+    const lines = html.split('\n')
+      .filter(line => line.includes('Calendar') || line.includes('Rows') || line.includes('Academic'))
+      .slice(0, 50); // First 50 relevant lines
+
+    res.json({
+      htmlLength: html.length,
+      relevantLines: lines,
+      hasCalendarVar: html.includes('Calendar'),
+      hasRowsVar: html.includes('Rows'),
+      hasDpuexp: html.includes('dpuexp')
+    });
+  } catch (error) {
+    res.status(500).json({ error: error.message });
+  }
+});
+
 // Get academic quarter dates from DePaul calendar
 app.get('/api/quarter-dates', async (req, res) => {
   try {
@@ -74,14 +110,31 @@ app.get('/api/quarter-dates', async (req, res) => {
 
     const html = await fetchPage();
 
+    console.log(`Fetched HTML length: ${html.length} characters`);
+
     // Extract the JSON data from the page
     // Look for: dpuexp.Academic_Calendar.Current_Active.Rows = [...]
-    const jsonMatch = html.match(/dpuexp\.Academic_Calendar\.Current_Active\.Rows\s*=\s*(\[[\s\S]*?\]);/);
+    // Try multiple patterns
+    let jsonMatch = html.match(/dpuexp\.Academic_Calendar\.Current_Active\.Rows\s*=\s*(\[[\s\S]*?\]);/);
 
     if (!jsonMatch) {
+      // Try alternative pattern without dpuexp
+      jsonMatch = html.match(/Academic_Calendar\.Current_Active\.Rows\s*=\s*(\[[\s\S]*?\]);/);
+    }
+
+    if (!jsonMatch) {
+      // Try to find any large JSON array in the page
+      jsonMatch = html.match(/Rows\s*=\s*(\[\{[\s\S]*?\}\]);/);
+    }
+
+    if (!jsonMatch) {
+      console.error('Could not find calendar data. Trying to find any calendar-related variables...');
+      const calendarVars = html.match(/calendar[^=]*=\s*\[/gi);
+      console.error('Found potential calendar variables:', calendarVars);
       throw new Error('Could not find academic calendar data in page');
     }
 
+    console.log('Found JSON match, attempting to parse...');
     const calendarData = JSON.parse(jsonMatch[1]);
     console.log(`Found ${calendarData.length} calendar entries`);
 
