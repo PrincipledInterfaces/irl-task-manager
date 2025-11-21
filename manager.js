@@ -514,14 +514,12 @@ function isDateInCurrentWeek(date) {
 // Helper function to check if a date is in the current academic quarter
 function isDateInCurrentQuarter(date) {
     if (!quarterDates || !quarterDates.quarters) {
-        // Fallback to calendar quarter if quarter data not loaded
-        const now = new Date();
-        const currentQuarter = Math.floor(now.getMonth() / 3);
-        const dateQuarter = Math.floor(date.getMonth() / 3);
-        return date.getFullYear() === now.getFullYear() && dateQuarter === currentQuarter;
+        console.error('[Quarter Check] Quarter data not loaded!');
+        return false;
     }
 
     const now = new Date();
+    console.log(`[Quarter Check] Checking if ${date.toISOString()} is in current academic quarter`);
 
     // Check which quarter we're currently in
     for (const [, quarterInfo] of Object.entries(quarterDates.quarters)) {
@@ -530,20 +528,22 @@ function isDateInCurrentQuarter(date) {
 
         // Check if 'now' is in this quarter
         if (now >= quarterStart && now <= quarterEnd) {
-            // Now check if the given date is also in this quarter
-            return date >= quarterStart && date <= quarterEnd;
+            console.log(`[Quarter Check] Current quarter: ${quarterInfo.name} (${quarterStart.toLocaleDateString()} - ${quarterEnd.toLocaleDateString()})`);
+            const result = date >= quarterStart && date <= quarterEnd;
+            console.log(`[Quarter Check] Date ${date.toLocaleDateString()} is ${result ? 'IN' : 'NOT IN'} current quarter`);
+            return result;
         }
     }
 
+    console.log('[Quarter Check] Not currently in any academic quarter');
     return false;
 }
 
 // Helper function to check if a date is in the current academic year
 function isDateInCurrentYear(date) {
     if (!quarterDates || !quarterDates.quarters) {
-        // Fallback to calendar year if quarter data not loaded
-        const now = new Date();
-        return date.getFullYear() === now.getFullYear();
+        console.error('[Year Check] Quarter data not loaded!');
+        return false;
     }
 
     // Academic year runs from Autumn start to Summer end
@@ -551,42 +551,66 @@ function isDateInCurrentYear(date) {
     const summer = quarterDates.quarters.summer;
 
     if (!autumn || !summer) {
-        // Fallback if quarter data incomplete
-        const now = new Date();
-        return date.getFullYear() === now.getFullYear();
+        console.error('[Year Check] Quarter data incomplete (missing autumn or summer)!');
+        return false;
     }
 
     const academicYearStart = new Date(autumn.start);
     const academicYearEnd = new Date(summer.end);
 
+    console.log(`[Year Check] Academic year: ${academicYearStart.toLocaleDateString()} - ${academicYearEnd.toLocaleDateString()}`);
+    const result = date >= academicYearStart && date <= academicYearEnd;
+    console.log(`[Year Check] Date ${date.toLocaleDateString()} is ${result ? 'IN' : 'NOT IN'} current academic year`);
+
     // Check if date is within the academic year range
-    return date >= academicYearStart && date <= academicYearEnd;
+    return result;
 }
 
 function renderHours() {
+    console.log('[Render Hours] Starting hour calculation...');
+
     // Check if budget data is loaded
     if (!budgetData) {
-        console.error("Budget data not loaded yet");
+        console.error("[Render Hours] Budget data not loaded yet");
         return;
     }
+
+    console.log('[Render Hours] Budget data:', budgetData);
+    console.log('[Render Hours] Quarter dates:', quarterDates);
+    console.log(`[Render Hours] Total tasks to process: ${allTasks.length}`);
 
     var totalHoursYear = 0;
     var totalHoursQuarter = 0;
     var totalHoursWeek = 0;
 
     allTasks.forEach(function(element, index) {
-        console.log(`Element at index ${index}: ${element}`);
-        //check if completed element is within current week, quarter, year
-        if (element.completed && element.due && isDateInCurrentYear(new Date(element.due.toDate()))) {
-            totalHoursYear += element.hours || 0;
-            if (isDateInCurrentQuarter(new Date(element.due.toDate()))) {
-                totalHoursQuarter += element.hours || 0;
-                if (isDateInCurrentWeek(new Date(element.due.toDate()))) {
-                    totalHoursWeek += element.hours || 0;
+        if (element.completed && element.due) {
+            const dueDate = new Date(element.due.toDate());
+            console.log(`[Task ${index}] "${element.title}" - Completed: ${element.completed}, Due: ${dueDate.toLocaleDateString()}, Hours: ${element.hours || 0}`);
+
+            if (isDateInCurrentYear(dueDate)) {
+                totalHoursYear += element.hours || 0;
+                console.log(`  ✓ Added to year total. Year total now: ${totalHoursYear}`);
+
+                if (isDateInCurrentQuarter(dueDate)) {
+                    totalHoursQuarter += element.hours || 0;
+                    console.log(`  ✓ Added to quarter total. Quarter total now: ${totalHoursQuarter}`);
+
+                    if (isDateInCurrentWeek(dueDate)) {
+                        totalHoursWeek += element.hours || 0;
+                        console.log(`  ✓ Added to week total. Week total now: ${totalHoursWeek}`);
+                    }
                 }
             }
+        } else if (element.completed || element.due) {
+            console.log(`[Task ${index}] "${element.title}" - Skipped (Completed: ${element.completed}, Has due date: ${!!element.due})`);
         }
     });
+
+    console.log('[Render Hours] Final totals:');
+    console.log(`  Week: ${totalHoursWeek} / ${budgetData.weeklyBudget}`);
+    console.log(`  Quarter: ${totalHoursQuarter} / ${budgetData.quarterlyBudget}`);
+    console.log(`  Year: ${totalHoursYear} / ${budgetData.yearlyBudget}`);
 
     // Update UI after loop completes
     document.getElementById("weeklyBar").value = totalHoursWeek;
@@ -600,6 +624,8 @@ function renderHours() {
     document.getElementById("yearlyBar").value = totalHoursYear;
     document.getElementById("yearlyBar").max = budgetData.yearlyBudget;
     document.getElementById("yearlyText").innerText = "Using "+totalHoursYear+" of "+budgetData.yearlyBudget+" hours this year.";
+
+    console.log('[Render Hours] UI updated successfully');
 }
 
 // Confirm and delete user
