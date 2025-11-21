@@ -8,6 +8,7 @@ let allUsers = [];
 let allTasks = [];
 let selectedUser = null;
 let budgetData = null;
+let quarterDates = null; // Store DePaul quarter dates
 
 // Available skills from skills.txt
 const AVAILABLE_SKILLS = [
@@ -49,6 +50,7 @@ onAuthStateChanged(auth, async (user) => {
             await loadAllUsers();
             await loadAllTasks();
             await loadBudgetData();
+            await loadQuarterDates();
 
             // Render team list
             renderTeamList();
@@ -183,6 +185,27 @@ async function updateBudgetData(updates) {
     } catch (error) {
         console.error("Error updating budget data:", error);
         throw error;
+    }
+}
+
+// Load academic quarter dates from DePaul calendar via server
+async function loadQuarterDates() {
+    try {
+        console.log("Loading DePaul academic quarter dates...");
+        const response = await fetch(getApiUrl('quarter-dates'));
+
+        if (!response.ok) {
+            throw new Error(`Failed to fetch quarter dates: ${response.statusText}`);
+        }
+
+        const data = await response.json();
+        quarterDates = data;
+        console.log("Quarter dates loaded:", quarterDates);
+    } catch (error) {
+        console.error("Error loading quarter dates:", error);
+        // Fallback to calendar quarters if scraping fails
+        console.warn("Falling back to standard calendar quarters");
+        quarterDates = null;
     }
 }
 
@@ -488,19 +511,56 @@ function isDateInCurrentWeek(date) {
     return date >= startOfWeek && date < endOfWeek;
 }
 
-// Helper function to check if a date is in the current quarter
+// Helper function to check if a date is in the current academic quarter
 function isDateInCurrentQuarter(date) {
-    const now = new Date();
-    const currentQuarter = Math.floor(now.getMonth() / 3);
-    const dateQuarter = Math.floor(date.getMonth() / 3);
+    if (!quarterDates || !quarterDates.quarters) {
+        // Fallback to calendar quarter if quarter data not loaded
+        const now = new Date();
+        const currentQuarter = Math.floor(now.getMonth() / 3);
+        const dateQuarter = Math.floor(date.getMonth() / 3);
+        return date.getFullYear() === now.getFullYear() && dateQuarter === currentQuarter;
+    }
 
-    return date.getFullYear() === now.getFullYear() && dateQuarter === currentQuarter;
+    const now = new Date();
+
+    // Check which quarter we're currently in
+    for (const [, quarterInfo] of Object.entries(quarterDates.quarters)) {
+        const quarterStart = new Date(quarterInfo.start);
+        const quarterEnd = new Date(quarterInfo.end);
+
+        // Check if 'now' is in this quarter
+        if (now >= quarterStart && now <= quarterEnd) {
+            // Now check if the given date is also in this quarter
+            return date >= quarterStart && date <= quarterEnd;
+        }
+    }
+
+    return false;
 }
 
-// Helper function to check if a date is in the current year
+// Helper function to check if a date is in the current academic year
 function isDateInCurrentYear(date) {
-    const now = new Date();
-    return date.getFullYear() === now.getFullYear();
+    if (!quarterDates || !quarterDates.quarters) {
+        // Fallback to calendar year if quarter data not loaded
+        const now = new Date();
+        return date.getFullYear() === now.getFullYear();
+    }
+
+    // Academic year runs from Autumn start to Summer end
+    const autumn = quarterDates.quarters.autumn;
+    const summer = quarterDates.quarters.summer;
+
+    if (!autumn || !summer) {
+        // Fallback if quarter data incomplete
+        const now = new Date();
+        return date.getFullYear() === now.getFullYear();
+    }
+
+    const academicYearStart = new Date(autumn.start);
+    const academicYearEnd = new Date(summer.end);
+
+    // Check if date is within the academic year range
+    return date >= academicYearStart && date <= academicYearEnd;
 }
 
 function renderHours() {

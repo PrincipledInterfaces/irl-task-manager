@@ -1,6 +1,8 @@
 const express = require('express');
 const admin = require('firebase-admin');
 const cors = require('cors');
+const axios = require('axios');
+const cheerio = require('cheerio');
 require('dotenv').config();
 
 const app = express();
@@ -41,6 +43,97 @@ const db = admin.firestore();
 // Health check endpoint
 app.get('/health', (req, res) => {
   res.json({ status: 'ok', timestamp: new Date().toISOString() });
+});
+
+// Get academic quarter dates from DePaul calendar
+app.get('/api/quarter-dates', async (req, res) => {
+  try {
+    console.log('Fetching DePaul academic calendar...');
+
+    // Fetch the page
+    const response = await axios.get('https://academics.depaul.edu/calendar/Pages/default.aspx', {
+      headers: {
+        'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36'
+      }
+    });
+
+    const html = response.data;
+
+    // Extract the JSON data from the page
+    // Look for: dpuexp.Academic_Calendar.Current_Active.Rows = [...]
+    const jsonMatch = html.match(/dpuexp\.Academic_Calendar\.Current_Active\.Rows\s*=\s*(\[[\s\S]*?\]);/);
+
+    if (!jsonMatch) {
+      throw new Error('Could not find academic calendar data in page');
+    }
+
+    const calendarData = JSON.parse(jsonMatch[1]);
+    console.log(`Found ${calendarData.length} calendar entries`);
+
+    // Get current year to determine which academic year to use
+    const now = new Date();
+    const currentMonth = now.getMonth(); // 0-11
+    const currentYear = now.getFullYear();
+
+    // Determine academic year (if we're in Aug-Dec, academic year is current-next, else previous-current)
+    let academicYearString;
+    if (currentMonth >= 7) { // August onwards
+      academicYearString = `${currentYear}-${currentYear + 1}`;
+    } else {
+      academicYearString = `${currentYear - 1}-${currentYear}`;
+    }
+
+    console.log(`Looking for academic year: ${academicYearString}`);
+
+    // Filter for Begin/End Date events for the current academic year
+    const relevantEvents = calendarData.filter(event =>
+      event.Academic_x0020_Calendar_x0020_Ye === academicYearString &&
+      event.Event_x0020_Type === 'Begin/End Date' &&
+      (event.LinkTitle.includes('Begin') || event.LinkTitle.includes('End'))
+    );
+
+    // Extract quarter dates
+    const quarters = {};
+    const quarterNames = ['Autumn', 'Winter', 'Spring', 'Summer'];
+
+    quarterNames.forEach(quarterName => {
+      const beginEvent = relevantEvents.find(e =>
+        e.Academic_x0020_Term === `${quarterName} Term` &&
+        e.LinkTitle.toLowerCase().includes('begin') &&
+        e.LinkTitle.toLowerCase().includes('classes')
+      );
+
+      const endEvent = relevantEvents.find(e =>
+        e.Academic_x0020_Term === `${quarterName} Term` &&
+        (e.LinkTitle.toLowerCase().includes('end') || e.LinkTitle.toLowerCase().includes('close')) &&
+        (e.LinkTitle.toLowerCase().includes('quarter') || e.LinkTitle.toLowerCase().includes('classes'))
+      );
+
+      if (beginEvent && endEvent) {
+        quarters[quarterName.toLowerCase()] = {
+          start: new Date(beginEvent.Date).toISOString(),
+          end: new Date(endEvent.Date).toISOString(),
+          name: quarterName
+        };
+      }
+    });
+
+    console.log('Extracted quarter dates:', quarters);
+
+    // Return the quarters with academic year info
+    res.json({
+      academicYear: academicYearString,
+      quarters: quarters,
+      fetchedAt: new Date().toISOString()
+    });
+
+  } catch (error) {
+    console.error('Error fetching quarter dates:', error);
+    res.status(500).json({
+      error: 'Failed to fetch quarter dates',
+      message: error.message
+    });
+  }
 });
 
 // Delete user endpoint
