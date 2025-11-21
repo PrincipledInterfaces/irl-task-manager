@@ -47,6 +47,9 @@ app.get('/health', (req, res) => {
 // Debug endpoint to see raw HTML
 app.get('/api/debug-calendar', async (req, res) => {
   try {
+    const fs = require('fs');
+    const path = require('path');
+
     const fetchPage = () => {
       return new Promise((resolve, reject) => {
         https.get('https://academics.depaul.edu/calendar/Pages/default.aspx', {
@@ -63,17 +66,27 @@ app.get('/api/debug-calendar', async (req, res) => {
 
     const html = await fetchPage();
 
+    // Save HTML to file for inspection
+    const debugPath = path.join(__dirname, 'calendar-debug.html');
+    fs.writeFileSync(debugPath, html);
+    console.log('Saved HTML to:', debugPath);
+
     // Find any variables that might contain calendar data
     const lines = html.split('\n')
       .filter(line => line.includes('Calendar') || line.includes('Rows') || line.includes('Academic'))
-      .slice(0, 50); // First 50 relevant lines
+      .slice(0, 100); // First 100 relevant lines
+
+    // Look for JSON-like structures
+    const jsonPatterns = html.match(/=\s*\[{/g);
 
     res.json({
       htmlLength: html.length,
+      savedTo: debugPath,
       relevantLines: lines,
       hasCalendarVar: html.includes('Calendar'),
       hasRowsVar: html.includes('Rows'),
-      hasDpuexp: html.includes('dpuexp')
+      hasDpuexp: html.includes('dpuexp'),
+      jsonArrayCount: jsonPatterns ? jsonPatterns.length : 0
     });
   } catch (error) {
     res.status(500).json({ error: error.message });
