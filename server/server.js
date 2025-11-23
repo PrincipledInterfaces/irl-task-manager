@@ -153,12 +153,28 @@ app.get('/api/quarter-dates', async (req, res) => {
 
     console.log(`Looking for academic year: ${academicYearString}`);
 
-    // Filter for Begin/End Date events for the current academic year
+    // Check what academic years are actually in the data
+    const uniqueYears = [...new Set(calendarData.map(e => e.Academic_x0020_Calendar_x0020_Ye))];
+    console.log('Available academic years in data:', uniqueYears);
+
+    // Find the most recent academic year that has data
+    let targetYear = academicYearString;
+    if (!uniqueYears.includes(academicYearString)) {
+      console.warn(`Academic year ${academicYearString} not found in data. Using most recent year.`);
+      // Sort years and get the most recent
+      const sortedYears = uniqueYears.sort().reverse();
+      targetYear = sortedYears[0];
+      console.log(`Using academic year: ${targetYear}`);
+    }
+
+    // Filter for Begin/End Date events for the target academic year
     const relevantEvents = calendarData.filter(event =>
-      event.Academic_x0020_Calendar_x0020_Ye === academicYearString &&
+      event.Academic_x0020_Calendar_x0020_Ye === targetYear &&
       event.Event_x0020_Type === 'Begin/End Date' &&
       (event.LinkTitle.includes('Begin') || event.LinkTitle.includes('End'))
     );
+
+    console.log(`Found ${relevantEvents.length} relevant events for ${targetYear}`);
 
     // Extract quarter dates
     const quarters = {};
@@ -190,7 +206,8 @@ app.get('/api/quarter-dates', async (req, res) => {
 
     // Return the quarters with academic year info
     res.json({
-      academicYear: academicYearString,
+      academicYear: targetYear,
+      requestedYear: academicYearString,
       quarters: quarters,
       fetchedAt: new Date().toISOString()
     });
