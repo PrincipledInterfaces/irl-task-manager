@@ -191,7 +191,7 @@ app.get('/api/quarter-dates', async (req, res) => {
 
     console.log(`Found ${relevantEvents.length} relevant events for ${targetYear}`);
 
-    // Extract quarter dates
+    // Extract quarter dates (start dates only)
     const quarters = {};
 
     // Map quarter names to their abbreviations
@@ -199,7 +199,7 @@ app.get('/api/quarter-dates', async (req, res) => {
       'Autumn': 'AQ',
       'Winter': 'WQ',
       'Spring': 'SQ',
-      'Summer': 'SUM'
+      'Summer': 'SUMMER'
     };
 
     // Extract year from academic year string (e.g., "2025-2026" -> "2025" for autumn, "2026" for others)
@@ -209,22 +209,16 @@ app.get('/api/quarter-dates', async (req, res) => {
       // Autumn quarter uses the start year, others use the end year
       const year = quarterName === 'Autumn' ? startYear : endYear;
 
-      // Look for begin pattern: "BEGIN AQ2025 ALL CLASSES"
-      const beginPattern = new RegExp(`BEGIN ${abbrev}${year} ALL CLASSES`, 'i');
-      const beginEvent = allYearEvents.find(e => beginPattern.test(e.LinkTitle));
+      // Look for begin pattern with flexible matching
+      // Matches: "BEGIN AQ2025 ALL CLASSES", "Begin SQ2026 Day & Evening Classes", "BEGIN SUMMER 2026 TERM"
+      const beginPattern = new RegExp(`BEGIN ${abbrev}\\s*${year}`, 'i');
+      const beginEvent = allYearEvents.find(e => e.LinkTitle && beginPattern.test(e.LinkTitle));
 
-      // Look for end pattern: "END OF AUTUMN QUARTER 2025"
-      const endPattern = new RegExp(`END OF ${quarterName.toUpperCase()} QUARTER ${year}`, 'i');
-      const endEvent = allYearEvents.find(e => endPattern.test(e.LinkTitle));
-
-      console.log(`${quarterName}: Begin=${!!beginEvent}, End=${!!endEvent}`);
-      if (beginEvent) console.log(`  Begin: "${beginEvent.LinkTitle}" on ${beginEvent.Date}`);
-      if (endEvent) console.log(`  End: "${endEvent.LinkTitle}" on ${endEvent.Date}`);
-
-      if (beginEvent && endEvent) {
+      console.log(`${quarterName}: Begin=${!!beginEvent}`);
+      if (beginEvent) {
+        console.log(`  Begin: "${beginEvent.LinkTitle}" on ${beginEvent.Date}`);
         quarters[quarterName.toLowerCase()] = {
           start: new Date(beginEvent.Date).toISOString(),
-          end: new Date(endEvent.Date).toISOString(),
           name: quarterName
         };
       }

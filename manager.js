@@ -203,8 +203,6 @@ async function loadQuarterDates() {
         console.log("Quarter dates loaded:", quarterDates);
     } catch (error) {
         console.error("Error loading quarter dates:", error);
-        // Fallback to calendar quarters if scraping fails
-        console.warn("Falling back to standard calendar quarters");
         quarterDates = null;
     }
 }
@@ -521,15 +519,29 @@ function isDateInCurrentQuarter(date) {
     const now = new Date();
     console.log(`[Quarter Check] Checking if ${date.toISOString()} is in current academic quarter`);
 
-    // Check which quarter we're currently in
-    for (const [, quarterInfo] of Object.entries(quarterDates.quarters)) {
-        const quarterStart = new Date(quarterInfo.start);
-        const quarterEnd = new Date(quarterInfo.end);
+    // Get all quarters in chronological order
+    const quarterOrder = ['autumn', 'winter', 'spring', 'summer'];
+    const sortedQuarters = quarterOrder
+        .filter(q => quarterDates.quarters[q])
+        .map(q => ({
+            name: q,
+            start: new Date(quarterDates.quarters[q].start),
+            displayName: quarterDates.quarters[q].name
+        }));
+
+    // Find which quarter we're currently in
+    for (let i = 0; i < sortedQuarters.length; i++) {
+        const quarter = sortedQuarters[i];
+        const nextQuarter = sortedQuarters[i + 1];
+
+        const quarterStart = quarter.start;
+        // Quarter ends when next quarter starts, or end of year if last quarter
+        const quarterEnd = nextQuarter ? nextQuarter.start : new Date(quarter.start.getFullYear() + 1, 8, 1); // Aug 1 next year
 
         // Check if 'now' is in this quarter
-        if (now >= quarterStart && now <= quarterEnd) {
-            console.log(`[Quarter Check] Current quarter: ${quarterInfo.name} (${quarterStart.toLocaleDateString()} - ${quarterEnd.toLocaleDateString()})`);
-            const result = date >= quarterStart && date <= quarterEnd;
+        if (now >= quarterStart && now < quarterEnd) {
+            console.log(`[Quarter Check] Current quarter: ${quarter.displayName} (${quarterStart.toLocaleDateString()} - ${quarterEnd.toLocaleDateString()})`);
+            const result = date >= quarterStart && date < quarterEnd;
             console.log(`[Quarter Check] Date ${date.toLocaleDateString()} is ${result ? 'IN' : 'NOT IN'} current quarter`);
             return result;
         }
@@ -546,20 +558,21 @@ function isDateInCurrentYear(date) {
         return false;
     }
 
-    // Academic year runs from Autumn start to Summer end
+    // Academic year runs from Autumn start to next Autumn start
     const autumn = quarterDates.quarters.autumn;
-    const summer = quarterDates.quarters.summer;
 
-    if (!autumn || !summer) {
-        console.error('[Year Check] Quarter data incomplete (missing autumn or summer)!');
+    if (!autumn) {
+        console.error('[Year Check] Quarter data incomplete (missing autumn)!');
         return false;
     }
 
     const academicYearStart = new Date(autumn.start);
-    const academicYearEnd = new Date(summer.end);
+    // Academic year ends when the next autumn starts (approximately 1 year later)
+    const academicYearEnd = new Date(academicYearStart);
+    academicYearEnd.setFullYear(academicYearEnd.getFullYear() + 1);
 
     console.log(`[Year Check] Academic year: ${academicYearStart.toLocaleDateString()} - ${academicYearEnd.toLocaleDateString()}`);
-    const result = date >= academicYearStart && date <= academicYearEnd;
+    const result = date >= academicYearStart && date < academicYearEnd;
     console.log(`[Year Check] Date ${date.toLocaleDateString()} is ${result ? 'IN' : 'NOT IN'} current academic year`);
 
     // Check if date is within the academic year range
