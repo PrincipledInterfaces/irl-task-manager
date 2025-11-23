@@ -146,6 +146,10 @@
         <div id="tasks" class="tab-content">
             <h2>Tasks Management</h2>
             <h5 id="taskGreeting">Hi Ben, there are 0 active tasks.</h5>
+            <!-- Tasks will be populated by manager.js -->
+            <div style="display:flex;justify-content:center;align-items:center;min-height:150px;">
+                <div class="loader"></div>
+            </div>
         </div>
 
         <div id="team" class="tab-content">
@@ -185,6 +189,97 @@
                     </article>
                     <div style="text-align: right;"><button><i class="fa-solid fa-plus"></i> Add Skill</button></div>
                 </div>
+        </article>
+    </dialog>
+
+    <dialog id="editUser" open>
+        <article>
+            <header>
+                <button aria-label="Close" rel="prev"></button>
+                <p>
+                    <strong>View/edit task</strong>
+                </p>
+            </header>
+            <h2 contenteditable="true" id="taskname">Task Name</h2> <input type="checkbox" role="switch" id="priority"> <label for="priority">High Priority?</label>
+            <hr>
+            <h5>Category:</h5>
+            <select id="taskcategory">
+                <option value="workshop">Workshop</option>
+                <option value="maintenence">Maintenence</option>
+                <option value="project">Project</option>
+                <option value="media">Media</option>
+                <option value="event">Event</option>
+                <option value="other">Other</option>
+            </select>
+            <hr>
+            <p contenteditable="true" id="taskdecription">Task description goes here. This is an example of a task description that can be edited.</p>
+            <hr>
+            <input type="number" id="taskhours" value="4" min="0" style="width: 80px;"> <label for="taskhours"><i class="fa-solid fa-clock"></i> Hours</label> | <input type="checkbox" role="switch" id="priority"> <label for="priority">Create apprentice task?</label>
+            <hr>
+            <h5>Due Date:</h5> <input type="datetime-local" name="datetime-local" aria-label="Datetime local">
+            <details>
+                <summary><i class="fa-solid fa-circle-info"></i> About event/workshop due dates...</summary>
+                <p>For events or workshops with set start and end dates, please set the due date to the START date/time of the event. The end date/time will be calculated based on this and the specified number of hours.</p>
+            </details>
+            <br>
+            <input type="checkbox" role="switch"> <label>This task has nonflexible timing.</label>
+            <details>
+                <summary><i class="fa-solid fa-circle-info"></i> About nonflexible timing...</summary>
+                <p>For tasks that should be hidden from the main board if uncompleted or unclaimed by the due date, such as a scheduled workshop that cannot be completed at a different date/time.</p>
+            </details>
+
+            <input type="checkbox" role="switch"> <label>This task is recurring.</label>
+            <br>
+            <!-- Hide div unless recurring switch is on -->
+            <div>
+                <label for="recurrenceFrequency">Recurrence Frequency:</label>
+                <select id="recurrenceFrequency">
+                    <option value="daily">Daily</option>
+                    <option value="weekly">Weekly</option>
+                    <option value="biweekly">Bi-Weekly</option>
+                    <option value="monthly">Monthly</option>
+                    <option value="quarterly">Custom Frequency</option>
+                </select>
+            </div>
+            <hr>
+            <h5>Number of <em data-tooltip="Number of staff for this project.">slots</em>:</h5>
+            <input type="number" id="taskslots" value="1" min="1" style="width: 80px;">
+            <hr>
+            <div style="display: flex; gap: 20px; align-items: stretch;">
+                <div style="flex: 1; display: flex; flex-direction: column;">
+                    <h5>Skills:</h5>
+                    <article style="flex: 1;">
+                        <label>
+                            <input name="skills" type="checkbox" role="switch" />
+                            Require <em data-tooltip="Staff must have one or more of the specified skills.">Skills?</em>
+                        </label>
+                            <!-- Show article when require skills is enabled, hide otherwise -->
+                            <article>
+                                <span class="badge badge-gray">Textiles <a href="#"><i class="fa-solid fa-plus"></i></a></span>
+                                <span class="badge badge-gray">Screen Printing <a href="#"><i class="fa-solid fa-plus"></i></a></span>
+                                <span class="badge badge-green">3D Printer (FDM) <a href="#"><i class="fa-solid fa-minus"></i></a></span>
+                                <span class="badge badge-gray">3D Printer (Resin) <a href="#"><i class="fa-solid fa-plus"></i></a></span>
+                                <span class="badge badge-gray">Laser Cutter <a href="#"><i class="fa-solid fa-plus"></i></a></span>
+                                <span class="badge badge-gray">Wood Shop <a href="#"><i class="fa-solid fa-plus"></i></a></span>
+                                <span class="badge badge-gray">Programming <a href="#"><i class="fa-solid fa-plus"></i></a></span>
+                                <span class="badge badge-gray">Mechanical <a href="#"><i class="fa-solid fa-plus"></i></a></span>
+                                <span class="badge badge-gray">Electronics <a href="#"><i class="fa-solid fa-plus"></i></a></span>
+                                <span class="badge badge-gray">3D Modeling <a href="#"><i class="fa-solid fa-plus"></i></a></span>
+                                <span class="badge badge-gray">Graphic Design <a href="#"><i class="fa-solid fa-plus"></i></a></span>
+                                <span class="badge badge-gray">Photo/Video <a href="#"><i class="fa-solid fa-plus"></i></a></span>
+                                <span class="badge badge-gray">CNC <a href="#"><i class="fa-solid fa-plus"></i></a></span>
+                            </article>
+                    </article>
+                    <div style="text-align: left;"><button style="background-color: rgb(255, 93, 93); border-color: rgb(255, 93, 93);"><i class="fa-solid fa-trash"></i> Delete Task</button></div>
+                </div>
+                <div style="flex: 1; display: flex; flex-direction: column;">
+                    <h6>Assign Staff:</h6>
+                    <article style="flex: 1;">
+                        <!-- poplate users assigned to this task, same appearance as with skills -->
+                    </article>
+                    <div style="text-align: right;"><button><i class="fa-solid fa-save"></i> Save Task</button></div>
+                </div>
+            </div>
         </article>
     </dialog>
 
