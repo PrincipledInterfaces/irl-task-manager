@@ -558,6 +558,8 @@ function isDateInCurrentYear(date) {
         return false;
     }
 
+    console.log('[Year Check] quarterDates.quarters:', quarterDates.quarters);
+
     // Academic year runs from Autumn start to next Autumn start
     const autumn = quarterDates.quarters.autumn;
 
@@ -566,12 +568,17 @@ function isDateInCurrentYear(date) {
         return false;
     }
 
+    console.log('[Year Check] autumn object:', autumn);
+    console.log('[Year Check] autumn.start:', autumn.start);
+
     const academicYearStart = new Date(autumn.start);
     // Academic year ends when the next autumn starts (approximately 1 year later)
     const academicYearEnd = new Date(academicYearStart);
     academicYearEnd.setFullYear(academicYearEnd.getFullYear() + 1);
 
     console.log(`[Year Check] Academic year: ${academicYearStart.toLocaleDateString()} - ${academicYearEnd.toLocaleDateString()}`);
+    console.log('[Year Check] academicYearStart ISO:', academicYearStart.toISOString());
+    console.log('[Year Check] academicYearEnd ISO:', academicYearEnd.toISOString());
     const result = date >= academicYearStart && date < academicYearEnd;
     console.log(`[Year Check] Date ${date.toLocaleDateString()} is ${result ? 'IN' : 'NOT IN'} current academic year`);
 
