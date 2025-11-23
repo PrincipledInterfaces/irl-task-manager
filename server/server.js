@@ -126,24 +126,11 @@ app.get('/api/quarter-dates', async (req, res) => {
     console.log(`Fetched HTML length: ${html.length} characters`);
 
     // Extract the JSON data from the page
-    // Look for: dpuexp.Academic_Calendar.Current_Active.Rows = [...]
-    // Try multiple patterns
-    let jsonMatch = html.match(/dpuexp\.Academic_Calendar\.Current_Active\.Rows\s*=\s*(\[[\s\S]*?\]);/);
+    // Look for: dpuexp.Academic_Calendar.Current_Active = { Rows: [...] }
+    const jsonMatch = html.match(/dpuexp\.Academic_Calendar\.Current_Active\s*=\s*\{\s*Rows:\s*(\[[\s\S]*?\])\s*\}/);
 
     if (!jsonMatch) {
-      // Try alternative pattern without dpuexp
-      jsonMatch = html.match(/Academic_Calendar\.Current_Active\.Rows\s*=\s*(\[[\s\S]*?\]);/);
-    }
-
-    if (!jsonMatch) {
-      // Try to find any large JSON array in the page
-      jsonMatch = html.match(/Rows\s*=\s*(\[\{[\s\S]*?\}\]);/);
-    }
-
-    if (!jsonMatch) {
-      console.error('Could not find calendar data. Trying to find any calendar-related variables...');
-      const calendarVars = html.match(/calendar[^=]*=\s*\[/gi);
-      console.error('Found potential calendar variables:', calendarVars);
+      console.error('Could not find calendar data with pattern: dpuexp.Academic_Calendar.Current_Active = { Rows: [...] }');
       throw new Error('Could not find academic calendar data in page');
     }
 
