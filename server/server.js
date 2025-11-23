@@ -167,6 +167,21 @@ app.get('/api/quarter-dates', async (req, res) => {
       console.log(`Using academic year: ${targetYear}`);
     }
 
+    // First, let's see what events exist for this year
+    const allYearEvents = calendarData.filter(event =>
+      event.Academic_x0020_Calendar_x0020_Ye === targetYear
+    );
+
+    console.log(`Total events for ${targetYear}: ${allYearEvents.length}`);
+
+    // See what event types exist
+    const eventTypes = [...new Set(allYearEvents.map(e => e.Event_x0020_Type))];
+    console.log('Event types in this year:', eventTypes);
+
+    // Sample some link titles
+    const sampleTitles = allYearEvents.slice(0, 10).map(e => e.LinkTitle);
+    console.log('Sample link titles:', sampleTitles);
+
     // Filter for Begin/End Date events for the target academic year
     const relevantEvents = calendarData.filter(event =>
       event.Academic_x0020_Calendar_x0020_Ye === targetYear &&
