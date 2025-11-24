@@ -912,6 +912,8 @@ function setupTaskDialog() {
     const requireSkillsSwitch = document.getElementById('taskRequireSkills');
     const recurringSwitch = document.getElementById('taskRecurring');
     const recurrenceFrequency = document.getElementById('recurrenceFrequency');
+    const locationSelect = document.getElementById('taskLocation');
+    const locationCustomInput = document.getElementById('taskLocationCustom');
 
     // Close button
     closeButton.addEventListener('click', () => {
@@ -956,6 +958,15 @@ function setupTaskDialog() {
         const customRecurrence = document.getElementById('customRecurrence');
         customRecurrence.style.display = recurrenceFrequency.value === 'custom' ? 'block' : 'none';
     });
+
+    // Show/hide custom location input when location is custom
+    locationSelect.addEventListener('change', () => {
+        if (locationSelect.value === 'custom') {
+            locationCustomInput.style.display = 'block';
+        } else {
+            locationCustomInput.style.display = 'none';
+        }
+    });
 }
 
 // Open task dialog for editing or creating
@@ -982,6 +993,20 @@ function openTaskDialog(taskId) {
         document.getElementById('taskRecurring').checked = selectedTask.recurring || false;
         document.getElementById('taskSlots').value = selectedTask.slots || 1;
         document.getElementById('taskRequireSkills').checked = (selectedTask.requiredSkills && selectedTask.requiredSkills.length > 0) || false;
+
+        // Set location
+        const taskLocation = selectedTask.location || 'IRL 1';
+        const locationSelect = document.getElementById('taskLocation');
+        const locationCustomInput = document.getElementById('taskLocationCustom');
+
+        if (['IRL 1', 'IRL 2', 'Remote'].includes(taskLocation)) {
+            locationSelect.value = taskLocation;
+            locationCustomInput.style.display = 'none';
+        } else {
+            locationSelect.value = 'custom';
+            locationCustomInput.value = taskLocation;
+            locationCustomInput.style.display = 'block';
+        }
 
         // Set due date
         if (selectedTask.due) {
@@ -1041,6 +1066,9 @@ function openTaskDialog(taskId) {
         document.getElementById('taskSlots').value = 1;
         document.getElementById('taskRequireSkills').checked = false;
         document.getElementById('taskSkillsList').style.display = 'none';
+        document.getElementById('taskLocation').value = 'IRL 1';
+        document.getElementById('taskLocationCustom').value = '';
+        document.getElementById('taskLocationCustom').style.display = 'none';
     }
 
     // Render assigned staff
@@ -1166,8 +1194,19 @@ async function saveTask() {
         // Gather form data
         const title = document.getElementById('taskName').textContent.trim();
         const priority = document.getElementById('taskPriority').checked;
-        const category = document.getElementById('taskCategory').value;
+        const categoryValue = document.getElementById('taskCategory').value;
         const description = document.getElementById('taskDescription').textContent.trim();
+
+        // Capitalize category properly
+        const categoryMap = {
+            workshop: 'Workshop',
+            maintenance: 'Maintenance',
+            project: 'Project',
+            media: 'Media',
+            event: 'Event',
+            other: 'Other'
+        };
+        const category = categoryMap[categoryValue] || 'Other';
         const hours = parseInt(document.getElementById('taskHours').value) || 0;
         const apprenticeTask = document.getElementById('taskApprentice').checked;
         const dueDateValue = document.getElementById('taskDueDate').value;
@@ -1192,7 +1231,27 @@ async function saveTask() {
             other: 'circle-info'
         };
 
-        const icon = categoryIconMap[category] || 'circle-info';
+        const icon = categoryIconMap[categoryValue] || 'circle-info';
+
+        // Handle location and location color
+        const locationSelect = document.getElementById('taskLocation').value;
+        const locationCustom = document.getElementById('taskLocationCustom').value.trim();
+
+        let location, locationColor;
+
+        if (locationSelect === 'custom') {
+            location = locationCustom || 'Custom Location';
+            locationColor = 'green';
+        } else {
+            location = locationSelect;
+            // Map location to color based on data&color guidelines
+            const locationColorMap = {
+                'IRL 1': 'blue',
+                'IRL 2': 'red',
+                'Remote': 'indigo'
+            };
+            locationColor = locationColorMap[location] || 'gray';
+        }
 
         // Build task object
         const taskData = {
@@ -1200,6 +1259,8 @@ async function saveTask() {
             priority,
             category,
             icon,
+            location,
+            locationColor,
             description,
             hours,
             apprenticeTask,

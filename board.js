@@ -77,6 +77,18 @@ function renderJobCard(task) {
     // Check if current user is already assigned
     const isUserAssigned = currentUser && assignedUsers.includes(currentUser.id);
 
+    // Check if user has required skills
+    let hasRequiredSkills = true;
+    let skillsTooltip = '';
+    if (task.requiredSkills && task.requiredSkills.length > 0) {
+        const userSkills = currentUser?.skills || [];
+        hasRequiredSkills = task.requiredSkills.some(skill => userSkills.includes(skill));
+
+        if (!hasRequiredSkills) {
+            skillsTooltip = `You need one of these skills: ${task.requiredSkills.join(', ')}`;
+        }
+    }
+
     // Build assignment section
     let assignmentSection = '';
 
@@ -98,7 +110,13 @@ function renderJobCard(task) {
 
     // Show claim button if there are open slots and user not already assigned
     if (openSlots > 0 && !isUserAssigned) {
-        assignmentSection += `<div style="text-align: center;"><button data-job-id="${task.id}">Claim Assignment</button></div>`;
+        if (!hasRequiredSkills) {
+            // Gray out button with tooltip if user lacks required skills
+            // Wrap disabled button in span with tooltip since disabled buttons don't trigger hover
+            assignmentSection += `<div style="text-align: center;"><span data-tooltip="${skillsTooltip}" style="display: inline-block;"><button data-job-id="${task.id}" disabled>Claim Assignment</button></span></div>`;
+        } else {
+            assignmentSection += `<div style="text-align: center;"><button data-job-id="${task.id}">Claim Assignment</button></div>`;
+        }
     } else if (isUserAssigned) {
         assignmentSection += `<div style="text-align: center; color: #888;"><i>You are assigned to this task</i></div>`;
     } else if (openSlots === 0) {
@@ -109,6 +127,25 @@ function renderJobCard(task) {
     const priorityBadge = task.isPriority
         ? ` <span class="badge badge-yellow"><i class="fa-solid fa-triangle-exclamation"></i> High Priority</span>`
         : '';
+
+    // Build skills section if task has required skills
+    let skillsSection = '';
+    if (task.requiredSkills && task.requiredSkills.length > 0) {
+        const skillBadges = task.requiredSkills.map(skill =>
+            `<span class="badge badge-blue">${skill}</span>`
+        ).join(' ');
+
+        skillsSection = `
+            <details>
+                <summary>View Required Skills</summary>
+                <div class="details-content">
+                    <div style="display: flex; gap: 8px; flex-wrap: wrap;">
+                        ${skillBadges}
+                    </div>
+                </div>
+            </details>
+        `;
+    }
 
     return `
         <article data-job-id="${task.id}">
@@ -122,6 +159,7 @@ function renderJobCard(task) {
                     <p>${task.description}</p>
                 </div>
             </details>
+            ${skillsSection}
             ${assignmentSection}
         </article>
     `;

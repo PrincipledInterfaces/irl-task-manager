@@ -323,6 +323,15 @@
             <hr>
             <input type="number" id="taskHours" value="4" min="0" style="width: 80px;"> <label for="taskHours"><i class="fa-solid fa-clock"></i> Hours</label> | <input type="checkbox" role="switch" id="taskApprentice"> <label for="taskApprentice">Create apprentice task?</label>
             <hr>
+            <h5>Location:</h5>
+            <select id="taskLocation">
+                <option value="IRL 1">IRL 1</option>
+                <option value="IRL 2">IRL 2</option>
+                <option value="Remote">Remote</option>
+                <option value="custom">Custom Location</option>
+            </select>
+            <input type="text" id="taskLocationCustom" placeholder="Enter custom location" style="display: none; margin-top: 0.5rem;">
+            <hr>
             <h5>Due Date:</h5> <input type="datetime-local" id="taskDueDate" aria-label="Datetime local">
             <details>
                 <summary><i class="fa-solid fa-circle-info"></i> About event/workshop due dates...</summary>
@@ -365,13 +374,13 @@
             <div style="display: flex; gap: 20px; align-items: stretch;">
                 <div style="flex: 1; display: flex; flex-direction: column;">
                     <h5>Skills:</h5>
-                    <article style="flex: 1;">
+                    <article style="flex: 1; display: flex; flex-direction: column;">
                         <label>
                             <input id="taskRequireSkills" type="checkbox" role="switch" />
                             Require <em data-tooltip="Staff must have one or more of the specified skills.">Skills?</em>
                         </label>
                             <!-- Show article when require skills is enabled, hide otherwise -->
-                            <article id="taskSkillsList" style="display: none;">
+                            <article id="taskSkillsList" style="display: none; max-height: 250px; overflow-y: auto; margin-top: 0.5rem;">
                                 <!-- Skills will be populated dynamically -->
                             </article>
                     </article>
@@ -379,7 +388,7 @@
                 </div>
                 <div style="flex: 1; display: flex; flex-direction: column;">
                     <h6>Assign Staff:</h6>
-                    <article style="flex: 1;" id="taskAssignedStaff">
+                    <article style="flex: 1; max-height: 250px; overflow-y: auto;" id="taskAssignedStaff">
                         <!-- Assigned users will be populated dynamically -->
                     </article>
                     <div style="text-align: right;"><button id="saveTaskBtn"><i class="fa-solid fa-save"></i> Save Task</button></div>
