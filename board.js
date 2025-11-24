@@ -456,6 +456,12 @@ function setupTaskFilters() {
         applyBtn.addEventListener('click', () => {
             applyTaskFilters();
             renderBoard();
+
+            // Collapse the filter panel
+            const filterDetails = applyBtn.closest('details');
+            if (filterDetails) {
+                filterDetails.removeAttribute('open');
+            }
         });
     }
 

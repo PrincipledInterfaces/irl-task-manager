@@ -1383,7 +1383,16 @@ async function saveTask() {
         }
 
         if (selectedTask && selectedTask.id) {
-            // Update existing task
+            // Get the ORIGINAL state from allTasks before any toggles were made
+            const originalTask = allTasks.find(t => t.id === selectedTask.id);
+            const oldAssignedUsers = originalTask ? (originalTask.assignedTo || []) : [];
+            const newAssignedUsers = taskData.assignedTo || [];
+
+            console.log('Syncing assignedJobIds...');
+            console.log('Old assigned users:', oldAssignedUsers);
+            console.log('New assigned users:', newAssignedUsers);
+
+            // Update existing task in Firestore
             await updateDoc(doc(db, "tasks", selectedTask.id), taskData);
             console.log('Task updated:', taskData);
 
@@ -1393,18 +1402,26 @@ async function saveTask() {
                 allTasks[taskIndex] = { ...allTasks[taskIndex], ...taskData };
             }
 
-            // Sync assignedJobIds for all assigned users
-            const oldAssignedUsers = selectedTask.assignedTo || [];
-            const newAssignedUsers = taskData.assignedTo || [];
-
             // Add task to users who were newly assigned
             const usersToAdd = newAssignedUsers.filter(userId => !oldAssignedUsers.includes(userId));
+            console.log('Users to add:', usersToAdd);
             for (const userId of usersToAdd) {
                 try {
                     await updateDoc(doc(db, "users", userId), {
                         assignedJobIds: arrayUnion(selectedTask.id)
                     });
-                    console.log(`Added task ${selectedTask.id} to user ${userId}'s assignedJobIds`);
+                    console.log(`✓ Added task ${selectedTask.id} to user ${userId}'s assignedJobIds`);
+
+                    // Update local user data
+                    const userIndex = allUsers.findIndex(u => u.id === userId);
+                    if (userIndex !== -1) {
+                        if (!allUsers[userIndex].assignedJobIds) {
+                            allUsers[userIndex].assignedJobIds = [];
+                        }
+                        if (!allUsers[userIndex].assignedJobIds.includes(selectedTask.id)) {
+                            allUsers[userIndex].assignedJobIds.push(selectedTask.id);
+                        }
+                    }
                 } catch (error) {
                     console.error(`Error updating assignedJobIds for user ${userId}:`, error);
                 }
@@ -1412,12 +1429,19 @@ async function saveTask() {
 
             // Remove task from users who were unassigned
             const usersToRemove = oldAssignedUsers.filter(userId => !newAssignedUsers.includes(userId));
+            console.log('Users to remove:', usersToRemove);
             for (const userId of usersToRemove) {
                 try {
                     await updateDoc(doc(db, "users", userId), {
                         assignedJobIds: arrayRemove(selectedTask.id)
                     });
-                    console.log(`Removed task ${selectedTask.id} from user ${userId}'s assignedJobIds`);
+                    console.log(`✓ Removed task ${selectedTask.id} from user ${userId}'s assignedJobIds`);
+
+                    // Update local user data
+                    const userIndex = allUsers.findIndex(u => u.id === userId);
+                    if (userIndex !== -1 && allUsers[userIndex].assignedJobIds) {
+                        allUsers[userIndex].assignedJobIds = allUsers[userIndex].assignedJobIds.filter(id => id !== selectedTask.id);
+                    }
                 } catch (error) {
                     console.error(`Error updating assignedJobIds for user ${userId}:`, error);
                 }
@@ -1520,6 +1544,12 @@ function setupTaskFilters() {
         applyBtn.addEventListener('click', () => {
             applyTaskFilters();
             renderTasksTab();
+
+            // Collapse the filter panel
+            const filterDetails = applyBtn.closest('details');
+            if (filterDetails) {
+                filterDetails.removeAttribute('open');
+            }
         });
     }
 
