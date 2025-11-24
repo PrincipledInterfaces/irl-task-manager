@@ -683,30 +683,48 @@ function renderHours() {
     var totalHoursWeek = 0;
 
     allTasks.forEach(function(element, index) {
-        // Skip if task doesn't have a due date
-        if (!element.due) {
-            console.log(`[Task ${index}] "${element.title}" - Skipped (No due date)`);
-            return;
-        }
-
         // Determine if we should count this task
         const shouldCount = includeActive
             ? !element.completed  // If including active, count all non-completed tasks
             : element.completed;   // If not including active, only count completed tasks
 
         if (shouldCount) {
-            const dueDate = new Date(element.due.toDate());
-            console.log(`[Task ${index}] "${element.title}" - Completed: ${element.completed}, Due: ${dueDate.toLocaleDateString()}, Hours: ${element.hours || 0}`);
+            let dateToCheck = null;
 
-            if (isDateInCurrentYear(dueDate)) {
+            // For completed tasks, use completedDate (or fall back to due date for old tasks)
+            if (element.completed) {
+                if (element.completedDate) {
+                    dateToCheck = new Date(element.completedDate.toDate());
+                    console.log(`[Task ${index}] "${element.title}" - Completed: ${dateToCheck.toLocaleDateString()}, Hours: ${element.hours || 0}`);
+                } else if (element.due) {
+                    // Fallback for old completed tasks without completedDate
+                    dateToCheck = new Date(element.due.toDate());
+                    console.log(`[Task ${index}] "${element.title}" - Completed (old, using due date): ${dateToCheck.toLocaleDateString()}, Hours: ${element.hours || 0}`);
+                } else {
+                    console.log(`[Task ${index}] "${element.title}" - Skipped (Completed but no completedDate or due date)`);
+                    return;
+                }
+            }
+            // For active tasks (when includeActive is true), use due date
+            else if (!element.completed && element.due) {
+                dateToCheck = new Date(element.due.toDate());
+                console.log(`[Task ${index}] "${element.title}" - Active, Due: ${dateToCheck.toLocaleDateString()}, Hours: ${element.hours || 0}`);
+            }
+            // Skip if no date available
+            else {
+                console.log(`[Task ${index}] "${element.title}" - Skipped (No due date)`);
+                return;
+            }
+
+            if (isDateInCurrentYear(dateToCheck)) {
                 totalHoursYear += element.hours || 0;
                 console.log(`  ✓ Added to year total. Year total now: ${totalHoursYear}`);
 
-                if (isDateInCurrentQuarter(dueDate)) {
+                if (isDateInCurrentQuarter(dateToCheck)) {
                     totalHoursQuarter += element.hours || 0;
                     console.log(`  ✓ Added to quarter total. Quarter total now: ${totalHoursQuarter}`);
 
-                    if (isDateInCurrentWeek(dueDate)) {
+                    if (isDateInCurrentWeek(dateToCheck)) {
                         totalHoursWeek += element.hours || 0;
                         console.log(`  ✓ Added to week total. Week total now: ${totalHoursWeek}`);
                     }
@@ -1373,6 +1391,36 @@ async function saveTask() {
             const taskIndex = allTasks.findIndex(t => t.id === selectedTask.id);
             if (taskIndex !== -1) {
                 allTasks[taskIndex] = { ...allTasks[taskIndex], ...taskData };
+            }
+
+            // Sync assignedJobIds for all assigned users
+            const oldAssignedUsers = selectedTask.assignedTo || [];
+            const newAssignedUsers = taskData.assignedTo || [];
+
+            // Add task to users who were newly assigned
+            const usersToAdd = newAssignedUsers.filter(userId => !oldAssignedUsers.includes(userId));
+            for (const userId of usersToAdd) {
+                try {
+                    await updateDoc(doc(db, "users", userId), {
+                        assignedJobIds: arrayUnion(selectedTask.id)
+                    });
+                    console.log(`Added task ${selectedTask.id} to user ${userId}'s assignedJobIds`);
+                } catch (error) {
+                    console.error(`Error updating assignedJobIds for user ${userId}:`, error);
+                }
+            }
+
+            // Remove task from users who were unassigned
+            const usersToRemove = oldAssignedUsers.filter(userId => !newAssignedUsers.includes(userId));
+            for (const userId of usersToRemove) {
+                try {
+                    await updateDoc(doc(db, "users", userId), {
+                        assignedJobIds: arrayRemove(selectedTask.id)
+                    });
+                    console.log(`Removed task ${selectedTask.id} from user ${userId}'s assignedJobIds`);
+                } catch (error) {
+                    console.error(`Error updating assignedJobIds for user ${userId}:`, error);
+                }
             }
         } else {
             // Create new task

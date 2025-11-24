@@ -1,6 +1,6 @@
 import { auth, db } from './firebase-config.js';
 import { onAuthStateChanged, signOut } from "https://www.gstatic.com/firebasejs/12.6.0/firebase-auth.js";
-import { collection, getDocs, doc, getDoc, updateDoc, arrayRemove } from "https://www.gstatic.com/firebasejs/12.6.0/firebase-firestore.js";
+import { collection, getDocs, doc, getDoc, updateDoc, arrayRemove, Timestamp } from "https://www.gstatic.com/firebasejs/12.6.0/firebase-firestore.js";
 import { getPageUrl } from './utils.js';
 
 let currentUser = null;
@@ -106,27 +106,76 @@ function isDateInCurrentWeek(date) {
 
 // Calculate and render weekly hours usage
 function renderWeeklyHours() {
+    console.log('=== RENDER WEEKLY HOURS DEBUG ===');
+    console.log('Current user:', currentUser);
+    console.log('User allowedHours:', currentUser.allowedHours);
+
     const allowedHours = currentUser.allowedHours || 0;
 
-    // Calculate weekly hours from user's assigned tasks that are due this week
+    if (allowedHours === 0) {
+        console.warn('WARNING: allowedHours is 0! User may not have this field set.');
+    }
+
+    // Calculate weekly hours from tasks completed this week
     let weeklyHours = 0;
 
+    const now = new Date();
+    console.log('Current date:', now.toISOString());
+    console.log('Checking week:', getWeekRange());
+
+    console.log(`Total tasks in database: ${tasksData.length}`);
+
+    const userAssignedTasks = tasksData.filter(task =>
+        task.assignedTo && task.assignedTo.includes(currentUser.id)
+    );
+    console.log(`Tasks assigned to current user: ${userAssignedTasks.length}`, userAssignedTasks);
+
     tasksData.forEach(task => {
-        // Only count if task is assigned to current user and not completed
-        if (task.assignedTo && task.assignedTo.includes(currentUser.id) && !task.completed) {
-            if (task.due) {
-                const dueDate = task.due.toDate ? task.due.toDate() : new Date(task.due);
-                if (isDateInCurrentWeek(dueDate)) {
+        // Count if task is assigned to current user AND has been completed
+        if (task.assignedTo && task.assignedTo.includes(currentUser.id) && task.completed) {
+            if (task.completedDate) {
+                const completedDate = task.completedDate.toDate ? task.completedDate.toDate() : new Date(task.completedDate);
+                const isThisWeek = isDateInCurrentWeek(completedDate);
+                console.log(`  Task "${task.title}": completed ${completedDate.toLocaleDateString()}, this week: ${isThisWeek}, hours: ${task.hours}`);
+
+                if (isThisWeek) {
                     weeklyHours += task.hours || 0;
+                }
+            } else {
+                // Fallback for old tasks: use due date if completedDate doesn't exist
+                console.log(`  Task "${task.title}": COMPLETED but no completedDate (using due date as fallback)`);
+                if (task.due) {
+                    const dueDate = task.due.toDate ? task.due.toDate() : new Date(task.due);
+                    const isThisWeek = isDateInCurrentWeek(dueDate);
+                    console.log(`    Due date: ${dueDate.toLocaleDateString()}, this week: ${isThisWeek}, hours: ${task.hours}`);
+                    if (isThisWeek) {
+                        weeklyHours += task.hours || 0;
+                    }
+                } else {
+                    console.log(`    No due date either - skipping`);
                 }
             }
         }
     });
 
-    console.log(`Weekly hours: ${weeklyHours} / ${allowedHours}`);
+    console.log(`FINAL Weekly hours: ${weeklyHours} / ${allowedHours}`);
+    console.log('=================================');
 
     // Update circular progress
     updateCircularProgress(weeklyHours, allowedHours);
+}
+
+// Helper to show current week range
+function getWeekRange() {
+    const now = new Date();
+    const startOfWeek = new Date(now);
+    startOfWeek.setDate(now.getDate() - now.getDay());
+    startOfWeek.setHours(0, 0, 0, 0);
+
+    const endOfWeek = new Date(startOfWeek);
+    endOfWeek.setDate(startOfWeek.getDate() + 7);
+
+    return `${startOfWeek.toLocaleDateString()} - ${endOfWeek.toLocaleDateString()}`;
 }
 
 // Helper function to update circular progress bar
@@ -387,9 +436,13 @@ async function handleComplete(event) {
                 return;
             }
 
+            // Get current timestamp for completedDate
+            const completedDate = Timestamp.fromDate(new Date());
+
             // Update task in Firestore
             await updateDoc(doc(db, "tasks", taskId), {
-                completed: true
+                completed: true,
+                completedDate: completedDate
             });
 
             // Update user's assignedJobIds in Firestore (remove from active list)
@@ -399,6 +452,7 @@ async function handleComplete(event) {
 
             // Update local data
             task.completed = true;
+            task.completedDate = completedDate;
             const index = currentUser.assignedJobIds.indexOf(taskId);
             if (index > -1) {
                 currentUser.assignedJobIds.splice(index, 1);
@@ -408,7 +462,7 @@ async function handleComplete(event) {
             renderWeeklyHours();
             renderBoard();
 
-            console.log(`Task ${taskId} completed by ${currentUser.fullName}`);
+            console.log(`Task ${taskId} completed by ${currentUser.fullName} at ${new Date().toISOString()}`);
         }
     } catch (error) {
         console.error("Error completing task:", error);

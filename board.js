@@ -117,9 +117,25 @@ function calculateUserWeeklyHours() {
     let weeklyHours = 0;
 
     tasksData.forEach(task => {
-        // Only count if task is assigned to current user and not completed
-        if (task.assignedTo && task.assignedTo.includes(currentUser.id) && !task.completed) {
-            if (task.due) {
+        // Only count tasks assigned to current user
+        if (task.assignedTo && task.assignedTo.includes(currentUser.id)) {
+            // For completed tasks, check if completed this week
+            if (task.completed) {
+                if (task.completedDate) {
+                    const completedDate = task.completedDate.toDate ? task.completedDate.toDate() : new Date(task.completedDate);
+                    if (isDateInCurrentWeek(completedDate)) {
+                        weeklyHours += task.hours || 0;
+                    }
+                } else if (task.due) {
+                    // Fallback for old completed tasks: use due date
+                    const dueDate = task.due.toDate ? task.due.toDate() : new Date(task.due);
+                    if (isDateInCurrentWeek(dueDate)) {
+                        weeklyHours += task.hours || 0;
+                    }
+                }
+            }
+            // For active (non-completed) tasks, check if due this week
+            else if (!task.completed && task.due) {
                 const dueDate = task.due.toDate ? task.due.toDate() : new Date(task.due);
                 if (isDateInCurrentWeek(dueDate)) {
                     weeklyHours += task.hours || 0;
