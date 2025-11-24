@@ -139,7 +139,7 @@ function renderWeeklyHours() {
                 console.log(`  Task "${task.title}": completed ${completedDate.toLocaleDateString()}, this week: ${isThisWeek}, hours: ${task.hours}`);
 
                 if (isThisWeek) {
-                    weeklyHours += task.hours || 0;
+                    weeklyHours += Number(task.hours) || 0;
                 }
             } else {
                 // Fallback for old tasks: use due date if completedDate doesn't exist
@@ -149,7 +149,7 @@ function renderWeeklyHours() {
                     const isThisWeek = isDateInCurrentWeek(dueDate);
                     console.log(`    Due date: ${dueDate.toLocaleDateString()}, this week: ${isThisWeek}, hours: ${task.hours}`);
                     if (isThisWeek) {
-                        weeklyHours += task.hours || 0;
+                        weeklyHours += Number(task.hours) || 0;
                     }
                 } else {
                     console.log(`    No due date either - skipping`);

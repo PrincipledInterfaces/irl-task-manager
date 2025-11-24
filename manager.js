@@ -723,17 +723,17 @@ function renderHours() {
             }
 
             if (isDateInCurrentYear(dateToCheck)) {
-                totalHoursYear += element.hours || 0;
+                totalHoursYear += Number(element.hours) || 0;
                 tasksCountedYear++;
                 console.log(`  ✓ Added to year total. Year total now: ${totalHoursYear} (${tasksCountedYear} tasks)`);
 
                 if (isDateInCurrentQuarter(dateToCheck)) {
-                    totalHoursQuarter += element.hours || 0;
+                    totalHoursQuarter += Number(element.hours) || 0;
                     tasksCountedQuarter++;
                     console.log(`  ✓ Added to quarter total. Quarter total now: ${totalHoursQuarter} (${tasksCountedQuarter} tasks)`);
 
                     if (isDateInCurrentWeek(dateToCheck)) {
-                        totalHoursWeek += element.hours || 0;
+                        totalHoursWeek += Number(element.hours) || 0;
                         tasksCountedWeek++;
                         console.log(`  ✓ Added to week total. Week total now: ${totalHoursWeek} (${tasksCountedWeek} tasks)`);
                     }

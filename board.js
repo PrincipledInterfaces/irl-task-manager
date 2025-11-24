@@ -124,13 +124,13 @@ function calculateUserWeeklyHours() {
                 if (task.completedDate) {
                     const completedDate = task.completedDate.toDate ? task.completedDate.toDate() : new Date(task.completedDate);
                     if (isDateInCurrentWeek(completedDate)) {
-                        weeklyHours += task.hours || 0;
+                        weeklyHours += Number(task.hours) || 0;
                     }
                 } else if (task.due) {
                     // Fallback for old completed tasks: use due date
                     const dueDate = task.due.toDate ? task.due.toDate() : new Date(task.due);
                     if (isDateInCurrentWeek(dueDate)) {
-                        weeklyHours += task.hours || 0;
+                        weeklyHours += Number(task.hours) || 0;
                     }
                 }
             }
@@ -138,7 +138,7 @@ function calculateUserWeeklyHours() {
             else if (!task.completed && task.due) {
                 const dueDate = task.due.toDate ? task.due.toDate() : new Date(task.due);
                 if (isDateInCurrentWeek(dueDate)) {
-                    weeklyHours += task.hours || 0;
+                    weeklyHours += Number(task.hours) || 0;
                 }
             }
         }
