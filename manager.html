@@ -89,18 +89,76 @@
             opacity: 1;
         }
 
-        /* Progress bar styling with fade-in */
-        progress {
-            height: 1.2rem;
-            animation: fadeIn 0.5s ease-in;
+        /* Circular progress bar styling */
+        .progress-row {
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            gap: 2rem;
+            padding: 1.5rem;
+            margin-bottom: 1rem;
+            background: var(--pico-card-background-color);
+            border-radius: 0.5rem;
         }
 
-        progress::-webkit-progress-value {
-            background-color: var(--pico-primary);
+        .progress-text {
+            flex: 1;
         }
 
-        progress::-moz-progress-bar {
-            background-color: var(--pico-primary);
+        .progress-text h4 {
+            margin: 0 0 0.5rem 0;
+        }
+
+        .progress-text p {
+            margin: 0;
+            color: var(--pico-muted-color);
+        }
+
+        .progress-text p.negative {
+            color: #ff5d5d;
+            font-weight: 600;
+        }
+
+        .circular-progress {
+            position: relative;
+            width: 120px;
+            height: 120px;
+            flex-shrink: 0;
+        }
+
+        .circular-progress svg {
+            transform: rotate(-90deg);
+            width: 100%;
+            height: 100%;
+        }
+
+        .circular-progress circle {
+            fill: none;
+            stroke-width: 10;
+        }
+
+        .circular-progress .bg-circle {
+            stroke: var(--pico-muted-border-color);
+        }
+
+        .circular-progress .progress-circle {
+            stroke: var(--pico-primary);
+            stroke-linecap: round;
+            transition: stroke-dashoffset 0.5s ease, stroke 0.3s ease;
+        }
+
+        .circular-progress .progress-circle.over-budget {
+            stroke: #ff5d5d;
+        }
+
+        .circular-progress .percentage {
+            position: absolute;
+            top: 50%;
+            left: 50%;
+            transform: translate(-50%, -50%);
+            font-size: 1.2rem;
+            font-weight: 700;
+            color: var(--pico-color);
         }
 
         @keyframes fadeIn {
@@ -128,27 +186,76 @@
         <!-- Tab content panels -->
         <div id="overview" class="tab-content active">
             <h2>Overview</h2>
-            <article id="weeklySection">
-                <strong id="weeklyText">...</strong>
-                <progress value="0" max="100" id="weeklyBar"></progress>
+
+            <div class="progress-row" id="weeklySection">
+                <div class="progress-text">
+                    <h4 id="weeklyUsage">0 out of 0 hours this week</h4>
+                    <p id="weeklyRemaining">0 hours remaining</p>
+                </div>
+                <div class="circular-progress">
+                    <svg viewBox="0 0 120 120">
+                        <circle class="bg-circle" cx="60" cy="60" r="54"></circle>
+                        <circle class="progress-circle" id="weeklyCircle" cx="60" cy="60" r="54"
+                                stroke-dasharray="339.292" stroke-dashoffset="339.292"></circle>
+                    </svg>
+                    <div class="percentage" id="weeklyPercent">0%</div>
+                </div>
+            </div>
+
+            <div class="progress-row" id="quarterlySection">
+                <div class="progress-text">
+                    <h4 id="quarterlyUsage">0 out of 0 hours this quarter</h4>
+                    <p id="quarterlyRemaining">0 hours remaining</p>
+                </div>
+                <div class="circular-progress">
+                    <svg viewBox="0 0 120 120">
+                        <circle class="bg-circle" cx="60" cy="60" r="54"></circle>
+                        <circle class="progress-circle" id="quarterlyCircle" cx="60" cy="60" r="54"
+                                stroke-dasharray="339.292" stroke-dashoffset="339.292"></circle>
+                    </svg>
+                    <div class="percentage" id="quarterlyPercent">0%</div>
+                </div>
+            </div>
+
+            <div class="progress-row" id="yearlySection">
+                <div class="progress-text">
+                    <h4 id="yearlyUsage">0 out of 0 hours this year</h4>
+                    <p id="yearlyRemaining">0 hours remaining</p>
+                </div>
+                <div class="circular-progress">
+                    <svg viewBox="0 0 120 120">
+                        <circle class="bg-circle" cx="60" cy="60" r="54"></circle>
+                        <circle class="progress-circle" id="yearlyCircle" cx="60" cy="60" r="54"
+                                stroke-dasharray="339.292" stroke-dashoffset="339.292"></circle>
+                    </svg>
+                    <div class="percentage" id="yearlyPercent">0%</div>
+                </div>
+            </div>
+
+            <p style="color: var(--pico-muted-color); margin-top: 1rem;" id="hoursCalculationNote">Hour usage is based on tasks marked as 'complete'.</p>
+
+            <article style="margin-top: 1.5rem;">
+                <label>
+                    <input type="checkbox" role="switch" id="includeActiveHours">
+                    Include active (uncompleted) tasks in hour calculations
+                </label>
+                <p style="color: var(--pico-muted-color); font-size: 0.9rem; margin-top: 0.5rem;">When enabled, all active tasks count toward hour totals, not just completed ones. Use this to forecast total hours if all current tasks are completed.</p>
             </article>
-            <article id="quarterlySection">
-                <strong id="quarterlyText">...</strong>
-                <progress value="0" max="100" id="quarterlyBar"></progress>
-            </article>
-            <article id="yearlySection">
-                <strong id="yearlyText">...</strong>
-                <progress value="0" max="100" id="yearlyBar"></progress>
-            </article>
-            Hour usage is based on tasks marked as 'complete'.
         </div>
 
         <div id="tasks" class="tab-content">
-            <h2>Tasks Management</h2>
-            <h5 id="taskGreeting">Hi Ben, there are 0 active tasks.</h5>
-            <!-- Tasks will be populated by manager.js -->
-            <div style="display:flex;justify-content:center;align-items:center;min-height:150px;">
-                <div class="loader"></div>
+            <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 1rem;">
+                <div>
+                    <h2>Tasks Management</h2>
+                    <h5 id="taskGreeting">Loading tasks...</h5>
+                </div>
+                <button id="createTaskBtn"><i class="fa-solid fa-plus"></i> Create Task</button>
+            </div>
+            <div id="tasksContainer">
+                <!-- Tasks will be populated by manager.js -->
+                <div style="display:flex;justify-content:center;align-items:center;min-height:150px;">
+                    <div class="loader"></div>
+                </div>
             </div>
         </div>
 
@@ -192,92 +299,90 @@
         </article>
     </dialog>
 
-    <dialog id="editUser">
+    <dialog id="editTask">
         <article>
             <header>
                 <button aria-label="Close" rel="prev"></button>
                 <p>
-                    <strong>View/edit task</strong>
+                    <strong id="taskDialogTitle">View/edit task</strong>
                 </p>
             </header>
-            <h2 contenteditable="true" id="taskname">Task Name</h2> <input type="checkbox" role="switch" id="priority"> <label for="priority">High Priority?</label>
+            <h2 contenteditable="true" id="taskName">Task Name</h2> <input type="checkbox" role="switch" id="taskPriority"> <label for="taskPriority">High Priority?</label>
             <hr>
             <h5>Category:</h5>
-            <select id="taskcategory">
+            <select id="taskCategory">
                 <option value="workshop">Workshop</option>
-                <option value="maintenence">Maintenence</option>
+                <option value="maintenance">Maintenance</option>
                 <option value="project">Project</option>
                 <option value="media">Media</option>
                 <option value="event">Event</option>
                 <option value="other">Other</option>
             </select>
             <hr>
-            <p contenteditable="true" id="taskdecription">Task description goes here. This is an example of a task description that can be edited.</p>
+            <p contenteditable="true" id="taskDescription">Task description goes here. This is an example of a task description that can be edited.</p>
             <hr>
-            <input type="number" id="taskhours" value="4" min="0" style="width: 80px;"> <label for="taskhours"><i class="fa-solid fa-clock"></i> Hours</label> | <input type="checkbox" role="switch" id="priority"> <label for="priority">Create apprentice task?</label>
+            <input type="number" id="taskHours" value="4" min="0" style="width: 80px;"> <label for="taskHours"><i class="fa-solid fa-clock"></i> Hours</label> | <input type="checkbox" role="switch" id="taskApprentice"> <label for="taskApprentice">Create apprentice task?</label>
             <hr>
-            <h5>Due Date:</h5> <input type="datetime-local" name="datetime-local" aria-label="Datetime local">
+            <h5>Due Date:</h5> <input type="datetime-local" id="taskDueDate" aria-label="Datetime local">
             <details>
                 <summary><i class="fa-solid fa-circle-info"></i> About event/workshop due dates...</summary>
                 <p>For events or workshops with set start and end dates, please set the due date to the START date/time of the event. The end date/time will be calculated based on this and the specified number of hours.</p>
             </details>
             <br>
-            <input type="checkbox" role="switch"> <label>This task has nonflexible timing.</label>
+            <input type="checkbox" role="switch" id="taskNonflexible"> <label for="taskNonflexible">This task has nonflexible timing.</label>
             <details>
                 <summary><i class="fa-solid fa-circle-info"></i> About nonflexible timing...</summary>
                 <p>For tasks that should be hidden from the main board if uncompleted or unclaimed by the due date, such as a scheduled workshop that cannot be completed at a different date/time.</p>
             </details>
 
-            <input type="checkbox" role="switch"> <label>This task is recurring.</label>
+            <input type="checkbox" role="switch" id="taskRecurring"> <label for="taskRecurring">This task is recurring.</label>
             <br>
             <!-- Hide div unless recurring switch is on -->
-            <div>
+            <div id="recurrenceOptions" style="display: none;">
                 <label for="recurrenceFrequency">Recurrence Frequency:</label>
                 <select id="recurrenceFrequency">
                     <option value="daily">Daily</option>
                     <option value="weekly">Weekly</option>
                     <option value="biweekly">Bi-Weekly</option>
                     <option value="monthly">Monthly</option>
-                    <option value="quarterly">Custom Frequency</option>
+                    <option value="custom">Custom Frequency</option>
                 </select>
+                <div id="customRecurrence" style="display: none; margin-top: 10px;">
+                    <label>Repeat on:</label><br>
+                    <input type="checkbox" id="recurSun" value="0"> <label for="recurSun">Sun</label>
+                    <input type="checkbox" id="recurMon" value="1"> <label for="recurMon">Mon</label>
+                    <input type="checkbox" id="recurTue" value="2"> <label for="recurTue">Tue</label>
+                    <input type="checkbox" id="recurWed" value="3"> <label for="recurWed">Wed</label>
+                    <input type="checkbox" id="recurThu" value="4"> <label for="recurThu">Thu</label>
+                    <input type="checkbox" id="recurFri" value="5"> <label for="recurFri">Fri</label>
+                    <input type="checkbox" id="recurSat" value="6"> <label for="recurSat">Sat</label>
+                </div>
             </div>
             <hr>
             <h5>Number of <em data-tooltip="Number of staff for this project.">slots</em>:</h5>
-            <input type="number" id="taskslots" value="1" min="1" style="width: 80px;">
+            <input type="number" id="taskSlots" value="1" min="1" style="width: 80px;">
             <hr>
             <div style="display: flex; gap: 20px; align-items: stretch;">
                 <div style="flex: 1; display: flex; flex-direction: column;">
                     <h5>Skills:</h5>
                     <article style="flex: 1;">
                         <label>
-                            <input name="skills" type="checkbox" role="switch" />
+                            <input id="taskRequireSkills" type="checkbox" role="switch" />
                             Require <em data-tooltip="Staff must have one or more of the specified skills.">Skills?</em>
                         </label>
                             <!-- Show article when require skills is enabled, hide otherwise -->
-                            <article>
-                                <span class="badge badge-gray">Textiles <a href="#"><i class="fa-solid fa-plus"></i></a></span>
-                                <span class="badge badge-gray">Screen Printing <a href="#"><i class="fa-solid fa-plus"></i></a></span>
-                                <span class="badge badge-green">3D Printer (FDM) <a href="#"><i class="fa-solid fa-minus"></i></a></span>
-                                <span class="badge badge-gray">3D Printer (Resin) <a href="#"><i class="fa-solid fa-plus"></i></a></span>
-                                <span class="badge badge-gray">Laser Cutter <a href="#"><i class="fa-solid fa-plus"></i></a></span>
-                                <span class="badge badge-gray">Wood Shop <a href="#"><i class="fa-solid fa-plus"></i></a></span>
-                                <span class="badge badge-gray">Programming <a href="#"><i class="fa-solid fa-plus"></i></a></span>
-                                <span class="badge badge-gray">Mechanical <a href="#"><i class="fa-solid fa-plus"></i></a></span>
-                                <span class="badge badge-gray">Electronics <a href="#"><i class="fa-solid fa-plus"></i></a></span>
-                                <span class="badge badge-gray">3D Modeling <a href="#"><i class="fa-solid fa-plus"></i></a></span>
-                                <span class="badge badge-gray">Graphic Design <a href="#"><i class="fa-solid fa-plus"></i></a></span>
-                                <span class="badge badge-gray">Photo/Video <a href="#"><i class="fa-solid fa-plus"></i></a></span>
-                                <span class="badge badge-gray">CNC <a href="#"><i class="fa-solid fa-plus"></i></a></span>
+                            <article id="taskSkillsList" style="display: none;">
+                                <!-- Skills will be populated dynamically -->
                             </article>
                     </article>
-                    <div style="text-align: left;"><button style="background-color: rgb(255, 93, 93); border-color: rgb(255, 93, 93);"><i class="fa-solid fa-trash"></i> Delete Task</button></div>
+                    <div style="text-align: left;"><button id="deleteTaskBtn" style="background-color: rgb(255, 93, 93); border-color: rgb(255, 93, 93);"><i class="fa-solid fa-trash"></i> Delete Task</button></div>
                 </div>
                 <div style="flex: 1; display: flex; flex-direction: column;">
                     <h6>Assign Staff:</h6>
-                    <article style="flex: 1;">
-                        <!-- poplate users assigned to this task, same appearance as with skills -->
+                    <article style="flex: 1;" id="taskAssignedStaff">
+                        <!-- Assigned users will be populated dynamically -->
                     </article>
-                    <div style="text-align: right;"><button><i class="fa-solid fa-save"></i> Save Task</button></div>
+                    <div style="text-align: right;"><button id="saveTaskBtn"><i class="fa-solid fa-save"></i> Save Task</button></div>
                 </div>
             </div>
         </article>

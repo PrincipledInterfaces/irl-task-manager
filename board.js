@@ -132,8 +132,30 @@ function renderBoard() {
     console.log("Rendering board...");
     console.log("Total tasks:", tasksData.length);
     const boardContainer = document.getElementById('board-listings');
-    // Only show non-completed tasks
-    const activeTasks = tasksData.filter(task => !task.completed);
+    const now = new Date();
+
+    // Filter tasks:
+    // 1. Only show non-completed tasks
+    // 2. Hide nonflexible tasks that are past due and not claimed/completed
+    const activeTasks = tasksData.filter(task => {
+        // Skip completed tasks
+        if (task.completed) return false;
+
+        // Check if task is nonflexible and past due
+        if (task.nonflexible && task.due) {
+            const dueDate = task.due.toDate ? task.due.toDate() : new Date(task.due);
+            const assignedUsers = task.assignedTo || [];
+
+            // Hide if past due and no one claimed it
+            if (dueDate < now && assignedUsers.length === 0) {
+                console.log(`Hiding nonflexible task "${task.title}" - past due with no assignments`);
+                return false;
+            }
+        }
+
+        return true;
+    });
+
     console.log("Active (non-completed) tasks:", activeTasks.length);
     console.log("Active tasks:", activeTasks);
     if (activeTasks.length === 0) {

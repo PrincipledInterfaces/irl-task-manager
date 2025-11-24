@@ -333,8 +333,172 @@ app.post('/api/delete-user', async (req, res) => {
   }
 });
 
+// Process recurring tasks - creates new instances of recurring tasks
+async function processRecurringTasks() {
+  console.log('[Recurring Tasks] Starting recurring task processing...');
+
+  try {
+    const now = new Date();
+    const tasksRef = db.collection('tasks');
+    const recurringTasksSnapshot = await tasksRef.where('recurring', '==', true).get();
+
+    console.log(`[Recurring Tasks] Found ${recurringTasksSnapshot.size} recurring tasks`);
+
+    const newTasks = [];
+
+    for (const taskDoc of recurringTasksSnapshot.docs) {
+      const task = { id: taskDoc.id, ...taskDoc.data() };
+
+      // Skip if no due date
+      if (!task.due) {
+        console.log(`[Recurring Tasks] Skipping "${task.title}" - no due date`);
+        continue;
+      }
+
+      const dueDate = task.due.toDate();
+
+      // Check if due date has passed
+      if (dueDate > now) {
+        console.log(`[Recurring Tasks] Skipping "${task.title}" - not yet due`);
+        continue;
+      }
+
+      // Calculate next due date based on recurrence frequency
+      let nextDueDate = new Date(dueDate);
+      const frequency = task.recurrenceFrequency || 'weekly';
+
+      switch (frequency) {
+        case 'daily':
+          nextDueDate.setDate(nextDueDate.getDate() + 1);
+          break;
+        case 'weekly':
+          nextDueDate.setDate(nextDueDate.getDate() + 7);
+          break;
+        case 'biweekly':
+          nextDueDate.setDate(nextDueDate.getDate() + 14);
+          break;
+        case 'monthly':
+          nextDueDate.setMonth(nextDueDate.getMonth() + 1);
+          break;
+        case 'custom':
+          // For custom frequency, find next occurrence based on selected days
+          if (task.recurrenceDays && task.recurrenceDays.length > 0) {
+            const currentDay = nextDueDate.getDay();
+            const sortedDays = [...task.recurrenceDays].sort((a, b) => a - b);
+
+            // Find next day in the list
+            let nextDay = sortedDays.find(day => day > currentDay);
+
+            if (nextDay !== undefined) {
+              // Next occurrence is this week
+              const daysToAdd = nextDay - currentDay;
+              nextDueDate.setDate(nextDueDate.getDate() + daysToAdd);
+            } else {
+              // Next occurrence is next week (first day in the list)
+              const daysToAdd = (7 - currentDay) + sortedDays[0];
+              nextDueDate.setDate(nextDueDate.getDate() + daysToAdd);
+            }
+          } else {
+            // Default to weekly if no days specified
+            nextDueDate.setDate(nextDueDate.getDate() + 7);
+          }
+          break;
+        default:
+          nextDueDate.setDate(nextDueDate.getDate() + 7);
+      }
+
+      console.log(`[Recurring Tasks] Processing "${task.title}"`);
+      console.log(`  Old due date: ${dueDate.toISOString()}`);
+      console.log(`  New due date: ${nextDueDate.toISOString()}`);
+
+      // Update the original task with new due date and reset completion/assignments
+      await taskDoc.ref.update({
+        due: admin.firestore.Timestamp.fromDate(nextDueDate),
+        completed: false,
+        assignedTo: [],
+        assignedToNames: []
+      });
+
+      console.log(`[Recurring Tasks] Updated "${task.title}" with new due date`);
+
+      newTasks.push({
+        id: task.id,
+        title: task.title,
+        oldDueDate: dueDate,
+        newDueDate: nextDueDate
+      });
+    }
+
+    console.log(`[Recurring Tasks] Processed ${newTasks.length} recurring tasks`);
+    return newTasks;
+
+  } catch (error) {
+    console.error('[Recurring Tasks] Error processing recurring tasks:', error);
+    throw error;
+  }
+}
+
+// Manual endpoint to trigger recurring task processing (for testing and manual runs)
+app.post('/api/process-recurring-tasks', async (req, res) => {
+  try {
+    // Get the ID token from the Authorization header
+    const authHeader = req.headers.authorization;
+    if (!authHeader || !authHeader.startsWith('Bearer ')) {
+      return res.status(401).json({ error: 'Unauthorized - No token provided' });
+    }
+
+    const idToken = authHeader.split('Bearer ')[1];
+
+    // Verify the ID token and get the caller's UID
+    let decodedToken;
+    try {
+      decodedToken = await admin.auth().verifyIdToken(idToken);
+    } catch (error) {
+      return res.status(401).json({ error: 'Unauthorized - Invalid token' });
+    }
+
+    const callerUid = decodedToken.uid;
+
+    // Check if caller is a manager
+    const callerDoc = await db.collection('users').doc(callerUid).get();
+    if (!callerDoc.exists || callerDoc.data().role !== 'manager') {
+      return res.status(403).json({ error: 'Permission denied - Only managers can trigger recurring task processing' });
+    }
+
+    // Process recurring tasks
+    const processedTasks = await processRecurringTasks();
+
+    res.json({
+      success: true,
+      message: `Processed ${processedTasks.length} recurring tasks`,
+      processedTasks: processedTasks
+    });
+
+  } catch (error) {
+    console.error('Error processing recurring tasks:', error);
+    res.status(500).json({ error: `Failed to process recurring tasks: ${error.message}` });
+  }
+});
+
+// Automated daily check for recurring tasks (runs at midnight)
+// Note: For production, you should use a proper cron service like Cloud Scheduler or a cron job
+// This is a simple in-memory scheduler that runs while the server is running
+setInterval(async () => {
+  const now = new Date();
+  // Run at midnight (00:00)
+  if (now.getHours() === 0 && now.getMinutes() === 0) {
+    console.log('[Recurring Tasks] Running daily recurring task check...');
+    try {
+      await processRecurringTasks();
+    } catch (error) {
+      console.error('[Recurring Tasks] Error in daily check:', error);
+    }
+  }
+}, 60000); // Check every minute
+
 // Start server
 app.listen(PORT, () => {
   console.log(`IRL Task Manager API server running on port ${PORT}`);
   console.log(`Health check: http://localhost:${PORT}/health`);
+  console.log(`Recurring tasks will be processed daily at midnight`);
 });

@@ -1,12 +1,13 @@
 import { auth, db } from './firebase-config.js';
 import { onAuthStateChanged, signOut } from "https://www.gstatic.com/firebasejs/12.6.0/firebase-auth.js";
-import { collection, getDocs, doc, getDoc, updateDoc, arrayUnion, arrayRemove } from "https://www.gstatic.com/firebasejs/12.6.0/firebase-firestore.js";
+import { collection, getDocs, doc, getDoc, updateDoc, arrayUnion, arrayRemove, addDoc, deleteDoc, Timestamp } from "https://www.gstatic.com/firebasejs/12.6.0/firebase-firestore.js";
 import { getPageUrl, getApiUrl } from './utils.js';
 
 let currentUser = null;
 let allUsers = [];
 let allTasks = [];
 let selectedUser = null;
+let selectedTask = null;
 let budgetData = null;
 let quarterDates = null; // Store DePaul quarter dates
 
@@ -55,11 +56,20 @@ onAuthStateChanged(auth, async (user) => {
             // Render team list
             renderTeamList();
 
+            // Render tasks tab
+            renderTasksTab();
+
             // Setup logout button
             setupLogoutButton();
 
             // Setup tab switching
             setupTabs();
+
+            // Setup task dialog
+            setupTaskDialog();
+
+            // Setup hours calculation mode switch
+            setupHoursCalculationSwitch();
 
             // Render hours
             renderHours();
@@ -586,6 +596,26 @@ function isDateInCurrentYear(date) {
     return result;
 }
 
+// Setup hours calculation mode switch
+function setupHoursCalculationSwitch() {
+    const includeActiveSwitch = document.getElementById('includeActiveHours');
+    const noteElement = document.getElementById('hoursCalculationNote');
+
+    if (includeActiveSwitch) {
+        includeActiveSwitch.addEventListener('change', () => {
+            // Update note text
+            if (includeActiveSwitch.checked) {
+                noteElement.textContent = 'Hour usage includes both completed and active tasks.';
+            } else {
+                noteElement.textContent = "Hour usage is based on tasks marked as 'complete'.";
+            }
+
+            // Re-render hours with new calculation mode
+            renderHours();
+        });
+    }
+}
+
 function renderHours() {
     console.log('[Render Hours] Starting hour calculation...');
 
@@ -599,12 +629,29 @@ function renderHours() {
     console.log('[Render Hours] Quarter dates:', quarterDates);
     console.log(`[Render Hours] Total tasks to process: ${allTasks.length}`);
 
+    // Check if we should include active tasks
+    const includeActiveSwitch = document.getElementById('includeActiveHours');
+    const includeActive = includeActiveSwitch ? includeActiveSwitch.checked : false;
+
+    console.log(`[Render Hours] Include active tasks: ${includeActive}`);
+
     var totalHoursYear = 0;
     var totalHoursQuarter = 0;
     var totalHoursWeek = 0;
 
     allTasks.forEach(function(element, index) {
-        if (element.completed && element.due) {
+        // Skip if task doesn't have a due date
+        if (!element.due) {
+            console.log(`[Task ${index}] "${element.title}" - Skipped (No due date)`);
+            return;
+        }
+
+        // Determine if we should count this task
+        const shouldCount = includeActive
+            ? !element.completed  // If including active, count all non-completed tasks
+            : element.completed;   // If not including active, only count completed tasks
+
+        if (shouldCount) {
             const dueDate = new Date(element.due.toDate());
             console.log(`[Task ${index}] "${element.title}" - Completed: ${element.completed}, Due: ${dueDate.toLocaleDateString()}, Hours: ${element.hours || 0}`);
 
@@ -622,8 +669,8 @@ function renderHours() {
                     }
                 }
             }
-        } else if (element.completed || element.due) {
-            console.log(`[Task ${index}] "${element.title}" - Skipped (Completed: ${element.completed}, Has due date: ${!!element.due})`);
+        } else {
+            console.log(`[Task ${index}] "${element.title}" - Skipped (Completed: ${element.completed}, Include active: ${includeActive})`);
         }
     });
 
@@ -632,20 +679,50 @@ function renderHours() {
     console.log(`  Quarter: ${totalHoursQuarter} / ${budgetData.quarterlyBudget}`);
     console.log(`  Year: ${totalHoursYear} / ${budgetData.yearlyBudget}`);
 
-    // Update UI after loop completes
-    document.getElementById("weeklyBar").value = totalHoursWeek;
-    document.getElementById("weeklyBar").max = budgetData.weeklyBudget;
-    document.getElementById("weeklyText").innerText = "Using "+totalHoursWeek+" of "+budgetData.weeklyBudget+" hours this week.";
-
-    document.getElementById("quarterlyBar").value = totalHoursQuarter;
-    document.getElementById("quarterlyBar").max = budgetData.quarterlyBudget;
-    document.getElementById("quarterlyText").innerText = "Using "+totalHoursQuarter+" of "+budgetData.quarterlyBudget+" hours this quarter.";
-
-    document.getElementById("yearlyBar").value = totalHoursYear;
-    document.getElementById("yearlyBar").max = budgetData.yearlyBudget;
-    document.getElementById("yearlyText").innerText = "Using "+totalHoursYear+" of "+budgetData.yearlyBudget+" hours this year.";
+    // Update circular progress bars
+    updateCircularProgress('weekly', totalHoursWeek, budgetData.weeklyBudget, 'this week');
+    updateCircularProgress('quarterly', totalHoursQuarter, budgetData.quarterlyBudget, 'this quarter');
+    updateCircularProgress('yearly', totalHoursYear, budgetData.yearlyBudget, 'this year');
 
     console.log('[Render Hours] UI updated successfully');
+}
+
+// Helper function to update circular progress bars
+function updateCircularProgress(period, used, budget, label) {
+    const remaining = budget - used;
+    const percentage = budget > 0 ? Math.min((used / budget) * 100, 100) : 0;
+    const isOverBudget = remaining < 0;
+
+    // Update text
+    document.getElementById(`${period}Usage`).textContent = `${used} out of ${budget} hours ${label}`;
+
+    const remainingElement = document.getElementById(`${period}Remaining`);
+    remainingElement.textContent = `${Math.abs(remaining)} hours ${remaining >= 0 ? 'remaining' : 'over budget'}`;
+
+    // Add/remove negative class
+    if (isOverBudget) {
+        remainingElement.classList.add('negative');
+    } else {
+        remainingElement.classList.remove('negative');
+    }
+
+    // Update percentage display
+    document.getElementById(`${period}Percent`).textContent = `${Math.round(percentage)}%`;
+
+    // Update circular progress
+    const circle = document.getElementById(`${period}Circle`);
+    const radius = 54;
+    const circumference = 2 * Math.PI * radius; // 339.292
+    const offset = circumference - (percentage / 100 * circumference);
+
+    circle.style.strokeDashoffset = offset;
+
+    // Add/remove over-budget class
+    if (isOverBudget) {
+        circle.classList.add('over-budget');
+    } else {
+        circle.classList.remove('over-budget');
+    }
 }
 
 // Confirm and delete user
@@ -729,5 +806,521 @@ async function confirmDeleteUser() {
         dialogContent.innerHTML = originalContent;
 
         alert(`Error deleting user: ${error.message}`);
+    }
+}
+
+// ==================== TASK MANAGEMENT FUNCTIONS ====================
+
+// Render tasks tab
+function renderTasksTab() {
+    const tasksContainer = document.getElementById('tasksContainer');
+    const taskGreeting = document.getElementById('taskGreeting');
+
+    if (!tasksContainer) return;
+
+    // Count active (non-completed) tasks
+    const activeTasks = allTasks.filter(task => !task.completed);
+
+    // Update greeting
+    taskGreeting.textContent = `There are ${activeTasks.length} active task${activeTasks.length !== 1 ? 's' : ''}.`;
+
+    // Sort tasks: incomplete first, then by due date
+    const sortedTasks = [...allTasks].sort((a, b) => {
+        if (a.completed !== b.completed) {
+            return a.completed ? 1 : -1;
+        }
+        if (a.due && b.due) {
+            return a.due.toDate() - b.due.toDate();
+        }
+        if (a.due) return -1;
+        if (b.due) return 1;
+        return 0;
+    });
+
+    if (sortedTasks.length === 0) {
+        tasksContainer.innerHTML = '<article><p>No tasks found. Create one to get started!</p></article>';
+        return;
+    }
+
+    // Group tasks by status
+    const incompleteTasks = sortedTasks.filter(t => !t.completed);
+    const completedTasks = sortedTasks.filter(t => t.completed);
+
+    let html = '';
+
+    // Render incomplete tasks
+    if (incompleteTasks.length > 0) {
+        html += '<h4>Active Tasks</h4>';
+        incompleteTasks.forEach(task => {
+            html += renderTaskCard(task);
+        });
+    }
+
+    // Render completed tasks
+    if (completedTasks.length > 0) {
+        html += `<details style="margin-top: 2rem;"><summary><h4 style="display: inline;">Completed Tasks (${completedTasks.length})</h4></summary>`;
+        completedTasks.forEach(task => {
+            html += renderTaskCard(task);
+        });
+        html += '</details>';
+    }
+
+    tasksContainer.innerHTML = html;
+
+    // Attach click listeners
+    document.querySelectorAll('.task-card').forEach(card => {
+        card.addEventListener('click', (e) => {
+            e.preventDefault();
+            const taskId = card.getAttribute('data-task-id');
+            openTaskDialog(taskId);
+        });
+    });
+}
+
+// Render a single task card
+function renderTaskCard(task) {
+    // Use icon from database, fallback to 'list' if not set
+    const icon = task.icon || 'list';
+    const assignedCount = task.assignedTo ? task.assignedTo.length : 0;
+    const slots = task.slots || 1;
+    const dueDate = task.due ? new Date(task.due.toDate()).toLocaleDateString() : 'No due date';
+    const priorityBadge = task.priority ? '<span class="badge badge-red">High Priority</span> ' : '';
+    const completedBadge = task.completed ? '<span class="badge badge-green">Completed</span> ' : '';
+
+    return `
+        <article class="task-card" data-task-id="${task.id}" style="cursor: pointer; opacity: ${task.completed ? '0.6' : '1'};">
+            <h4><i class="fa-solid fa-${icon}"></i> ${task.title}</h4>
+            <p style="color: #888; margin-bottom: 0.5rem;">${task.description || 'No description'}</p>
+            <div style="display: flex; gap: 10px; flex-wrap: wrap; align-items: center;">
+                ${priorityBadge}
+                ${completedBadge}
+                <span class="badge badge-gray"><i class="fa-solid fa-clock"></i> ${task.hours || 0} hrs</span>
+                <span class="badge badge-gray"><i class="fa-solid fa-calendar"></i> ${dueDate}</span>
+                <span class="badge badge-${assignedCount >= slots ? 'green' : 'yellow'}"><i class="fa-solid fa-users"></i> ${assignedCount}/${slots}</span>
+            </div>
+        </article>
+    `;
+}
+
+// Setup task dialog functionality
+function setupTaskDialog() {
+    const dialog = document.getElementById('editTask');
+    const closeButton = dialog.querySelector('button[aria-label="Close"]');
+    const saveButton = document.getElementById('saveTaskBtn');
+    const deleteButton = document.getElementById('deleteTaskBtn');
+    const createButton = document.getElementById('createTaskBtn');
+    const requireSkillsSwitch = document.getElementById('taskRequireSkills');
+    const recurringSwitch = document.getElementById('taskRecurring');
+    const recurrenceFrequency = document.getElementById('recurrenceFrequency');
+
+    // Close button
+    closeButton.addEventListener('click', () => {
+        dialog.close();
+        selectedTask = null;
+    });
+
+    // Create task button
+    createButton.addEventListener('click', () => {
+        openTaskDialog(null); // null means create new
+    });
+
+    // Save button
+    saveButton.addEventListener('click', async () => {
+        await saveTask();
+    });
+
+    // Delete button
+    deleteButton.addEventListener('click', async () => {
+        await deleteTask();
+    });
+
+    // Show/hide skills list when switch is toggled
+    requireSkillsSwitch.addEventListener('change', () => {
+        const skillsList = document.getElementById('taskSkillsList');
+        if (requireSkillsSwitch.checked) {
+            skillsList.style.display = 'block';
+            renderSkillsInTaskDialog();
+        } else {
+            skillsList.style.display = 'none';
+        }
+    });
+
+    // Show/hide recurrence options when recurring switch is toggled
+    recurringSwitch.addEventListener('change', () => {
+        const recurrenceOptions = document.getElementById('recurrenceOptions');
+        recurrenceOptions.style.display = recurringSwitch.checked ? 'block' : 'none';
+    });
+
+    // Show/hide custom recurrence when frequency is custom
+    recurrenceFrequency.addEventListener('change', () => {
+        const customRecurrence = document.getElementById('customRecurrence');
+        customRecurrence.style.display = recurrenceFrequency.value === 'custom' ? 'block' : 'none';
+    });
+}
+
+// Open task dialog for editing or creating
+function openTaskDialog(taskId) {
+    const dialog = document.getElementById('editTask');
+    const dialogTitle = document.getElementById('taskDialogTitle');
+    const deleteButton = document.getElementById('deleteTaskBtn');
+
+    if (taskId) {
+        // Edit existing task
+        selectedTask = allTasks.find(t => t.id === taskId);
+        if (!selectedTask) return;
+
+        dialogTitle.textContent = 'Edit Task';
+        deleteButton.style.display = 'block';
+
+        // Populate form
+        document.getElementById('taskName').textContent = selectedTask.title || '';
+        document.getElementById('taskPriority').checked = selectedTask.priority || false;
+        document.getElementById('taskDescription').textContent = selectedTask.description || '';
+        document.getElementById('taskHours').value = selectedTask.hours || 0;
+        document.getElementById('taskApprentice').checked = selectedTask.apprenticeTask || false;
+        document.getElementById('taskNonflexible').checked = selectedTask.nonflexible || false;
+        document.getElementById('taskRecurring').checked = selectedTask.recurring || false;
+        document.getElementById('taskSlots').value = selectedTask.slots || 1;
+        document.getElementById('taskRequireSkills').checked = (selectedTask.requiredSkills && selectedTask.requiredSkills.length > 0) || false;
+
+        // Set due date
+        if (selectedTask.due) {
+            const dueDate = selectedTask.due.toDate();
+            const localDatetime = new Date(dueDate.getTime() - (dueDate.getTimezoneOffset() * 60000)).toISOString().slice(0, 16);
+            document.getElementById('taskDueDate').value = localDatetime;
+        } else {
+            document.getElementById('taskDueDate').value = '';
+        }
+
+        // Handle recurring options
+        if (selectedTask.recurring) {
+            document.getElementById('recurrenceOptions').style.display = 'block';
+            document.getElementById('recurrenceFrequency').value = selectedTask.recurrenceFrequency || 'weekly';
+
+            if (selectedTask.recurrenceFrequency === 'custom' && selectedTask.recurrenceDays) {
+                document.getElementById('customRecurrence').style.display = 'block';
+                // Clear all checkboxes first
+                ['recurSun', 'recurMon', 'recurTue', 'recurWed', 'recurThu', 'recurFri', 'recurSat'].forEach(id => {
+                    document.getElementById(id).checked = false;
+                });
+                // Check the selected days
+                selectedTask.recurrenceDays.forEach(day => {
+                    const dayIds = ['recurSun', 'recurMon', 'recurTue', 'recurWed', 'recurThu', 'recurFri', 'recurSat'];
+                    document.getElementById(dayIds[day]).checked = true;
+                });
+            }
+        } else {
+            document.getElementById('recurrenceOptions').style.display = 'none';
+        }
+
+        // Handle skills
+        if (selectedTask.requiredSkills && selectedTask.requiredSkills.length > 0) {
+            document.getElementById('taskSkillsList').style.display = 'block';
+            renderSkillsInTaskDialog();
+        } else {
+            document.getElementById('taskSkillsList').style.display = 'none';
+        }
+
+    } else {
+        // Create new task
+        selectedTask = null;
+        dialogTitle.textContent = 'Create New Task';
+        deleteButton.style.display = 'none';
+
+        // Reset form
+        document.getElementById('taskName').textContent = 'New Task';
+        document.getElementById('taskPriority').checked = false;
+        document.getElementById('taskCategory').value = 'other';
+        document.getElementById('taskDescription').textContent = '';
+        document.getElementById('taskHours').value = 4;
+        document.getElementById('taskApprentice').checked = false;
+        document.getElementById('taskDueDate').value = '';
+        document.getElementById('taskNonflexible').checked = false;
+        document.getElementById('taskRecurring').checked = false;
+        document.getElementById('recurrenceOptions').style.display = 'none';
+        document.getElementById('taskSlots').value = 1;
+        document.getElementById('taskRequireSkills').checked = false;
+        document.getElementById('taskSkillsList').style.display = 'none';
+    }
+
+    // Render assigned staff
+    renderAssignedStaffInTaskDialog();
+
+    // Show dialog
+    dialog.showModal();
+
+    // Set category after dialog is shown to ensure select element is rendered
+    if (taskId && selectedTask) {
+        document.getElementById('taskCategory').value = selectedTask.category || 'other';
+    } else {
+        document.getElementById('taskCategory').value = 'other';
+    }
+}
+
+// Render skills in task dialog
+function renderSkillsInTaskDialog() {
+    const skillsList = document.getElementById('taskSkillsList');
+    const taskSkills = (selectedTask && selectedTask.requiredSkills) ? selectedTask.requiredSkills : [];
+
+    skillsList.innerHTML = AVAILABLE_SKILLS.map(skill => {
+        const isSelected = taskSkills.includes(skill);
+        const badgeClass = isSelected ? 'badge-green' : 'badge-gray';
+        const icon = isSelected ? 'minus' : 'plus';
+
+        return `<span class="badge ${badgeClass}"><a href="#" class="hoveranim toggle-skill" data-skill="${skill}" style="color: inherit; text-decoration: none;">${skill} <i class="fa-solid fa-${icon}"></i></a></span>`;
+    }).join(' ');
+
+    // Attach click listeners
+    setTimeout(() => {
+        skillsList.querySelectorAll('.toggle-skill').forEach(link => {
+            link.addEventListener('click', (e) => {
+                e.preventDefault();
+                const skill = link.getAttribute('data-skill');
+                toggleSkillInTask(skill);
+            });
+        });
+    }, 0);
+}
+
+// Toggle skill in task
+function toggleSkillInTask(skill) {
+    if (!selectedTask) {
+        selectedTask = { requiredSkills: [] };
+    }
+
+    if (!selectedTask.requiredSkills) {
+        selectedTask.requiredSkills = [];
+    }
+
+    const index = selectedTask.requiredSkills.indexOf(skill);
+    if (index > -1) {
+        selectedTask.requiredSkills.splice(index, 1);
+    } else {
+        selectedTask.requiredSkills.push(skill);
+    }
+
+    renderSkillsInTaskDialog();
+}
+
+// Render assigned staff in task dialog
+function renderAssignedStaffInTaskDialog() {
+    const staffList = document.getElementById('taskAssignedStaff');
+    const assignedIds = (selectedTask && selectedTask.assignedTo) ? selectedTask.assignedTo : [];
+
+    const regularUsers = allUsers.filter(user => user.role !== "manager");
+
+    if (regularUsers.length === 0) {
+        staffList.innerHTML = '<p style="color: #888;">No staff available</p>';
+        return;
+    }
+
+    staffList.innerHTML = regularUsers.map(user => {
+        const isAssigned = assignedIds.includes(user.id);
+        const badgeClass = isAssigned ? 'badge-green' : 'badge-gray';
+        const icon = isAssigned ? 'minus' : 'plus';
+
+        return `<span class="badge ${badgeClass}"><a href="#" class="hoveranim toggle-staff" data-user-id="${user.id}" style="color: inherit; text-decoration: none;">${user.fullName} <i class="fa-solid fa-${icon}"></i></a></span><br>`;
+    }).join('');
+
+    // Attach click listeners
+    setTimeout(() => {
+        staffList.querySelectorAll('.toggle-staff').forEach(link => {
+            link.addEventListener('click', (e) => {
+                e.preventDefault();
+                const userId = link.getAttribute('data-user-id');
+                toggleStaffInTask(userId);
+            });
+        });
+    }, 0);
+}
+
+// Toggle staff assignment in task
+function toggleStaffInTask(userId) {
+    if (!selectedTask) {
+        selectedTask = { assignedTo: [], assignedToNames: [] };
+    }
+
+    if (!selectedTask.assignedTo) {
+        selectedTask.assignedTo = [];
+        selectedTask.assignedToNames = [];
+    }
+
+    const user = allUsers.find(u => u.id === userId);
+    if (!user) return;
+
+    const index = selectedTask.assignedTo.indexOf(userId);
+    if (index > -1) {
+        selectedTask.assignedTo.splice(index, 1);
+        selectedTask.assignedToNames.splice(index, 1);
+    } else {
+        selectedTask.assignedTo.push(userId);
+        selectedTask.assignedToNames.push(user.fullName);
+    }
+
+    renderAssignedStaffInTaskDialog();
+}
+
+// Save task to Firestore
+async function saveTask() {
+    try {
+        // Gather form data
+        const title = document.getElementById('taskName').textContent.trim();
+        const priority = document.getElementById('taskPriority').checked;
+        const category = document.getElementById('taskCategory').value;
+        const description = document.getElementById('taskDescription').textContent.trim();
+        const hours = parseInt(document.getElementById('taskHours').value) || 0;
+        const apprenticeTask = document.getElementById('taskApprentice').checked;
+        const dueDateValue = document.getElementById('taskDueDate').value;
+        const nonflexible = document.getElementById('taskNonflexible').checked;
+        const recurring = document.getElementById('taskRecurring').checked;
+        const slots = parseInt(document.getElementById('taskSlots').value) || 1;
+        const requireSkills = document.getElementById('taskRequireSkills').checked;
+
+        // Validate
+        if (!title) {
+            alert('Please enter a task title');
+            return;
+        }
+
+        // Map category to icon based on data&color guidelines
+        const categoryIconMap = {
+            workshop: 'hammer',
+            maintenance: 'broom',
+            project: 'compass-drafting',
+            media: 'camera',
+            event: 'user',
+            other: 'circle-info'
+        };
+
+        const icon = categoryIconMap[category] || 'circle-info';
+
+        // Build task object
+        const taskData = {
+            title,
+            priority,
+            category,
+            icon,
+            description,
+            hours,
+            apprenticeTask,
+            nonflexible,
+            recurring,
+            slots,
+            completed: selectedTask ? selectedTask.completed || false : false,
+            assignedTo: selectedTask ? selectedTask.assignedTo || [] : [],
+            assignedToNames: selectedTask ? selectedTask.assignedToNames || [] : [],
+            requiredSkills: requireSkills && selectedTask ? selectedTask.requiredSkills || [] : []
+        };
+
+        // Handle due date
+        if (dueDateValue) {
+            const dueDate = new Date(dueDateValue);
+            taskData.due = Timestamp.fromDate(dueDate);
+        } else {
+            taskData.due = null;
+        }
+
+        // Handle recurring options
+        if (recurring) {
+            taskData.recurrenceFrequency = document.getElementById('recurrenceFrequency').value;
+
+            if (taskData.recurrenceFrequency === 'custom') {
+                const days = [];
+                ['recurSun', 'recurMon', 'recurTue', 'recurWed', 'recurThu', 'recurFri', 'recurSat'].forEach((id, index) => {
+                    if (document.getElementById(id).checked) {
+                        days.push(index);
+                    }
+                });
+                taskData.recurrenceDays = days;
+            }
+        }
+
+        if (selectedTask && selectedTask.id) {
+            // Update existing task
+            await updateDoc(doc(db, "tasks", selectedTask.id), taskData);
+            console.log('Task updated:', taskData);
+
+            // Update local data
+            const taskIndex = allTasks.findIndex(t => t.id === selectedTask.id);
+            if (taskIndex !== -1) {
+                allTasks[taskIndex] = { ...allTasks[taskIndex], ...taskData };
+            }
+        } else {
+            // Create new task
+            const docRef = await addDoc(collection(db, "tasks"), taskData);
+            console.log('Task created with ID:', docRef.id);
+
+            // Add to local data
+            allTasks.push({
+                id: docRef.id,
+                ...taskData
+            });
+
+            // Create apprentice task if requested
+            if (apprenticeTask) {
+                const apprenticeTaskData = {
+                    ...taskData,
+                    title: `[Apprentice] ${title}`,
+                    hours: Math.floor(hours / 2), // Half the hours
+                    apprenticeTask: false, // Don't cascade apprentice task creation
+                    assignedTo: [],
+                    assignedToNames: []
+                };
+
+                const apprenticeDocRef = await addDoc(collection(db, "tasks"), apprenticeTaskData);
+                console.log('Apprentice task created with ID:', apprenticeDocRef.id);
+
+                // Add to local data
+                allTasks.push({
+                    id: apprenticeDocRef.id,
+                    ...apprenticeTaskData
+                });
+            }
+        }
+
+        // Close dialog and refresh
+        document.getElementById('editTask').close();
+        renderTasksTab();
+
+        const message = selectedTask && selectedTask.id
+            ? 'Task updated successfully!'
+            : apprenticeTask
+                ? 'Task and apprentice task created successfully!'
+                : 'Task created successfully!';
+
+        alert(message);
+        selectedTask = null;
+
+    } catch (error) {
+        console.error('Error saving task:', error);
+        alert('Error saving task: ' + error.message);
+    }
+}
+
+// Delete task from Firestore
+async function deleteTask() {
+    if (!selectedTask || !selectedTask.id) return;
+
+    if (!confirm(`Are you sure you want to delete "${selectedTask.title}"? This cannot be undone.`)) {
+        return;
+    }
+
+    try {
+        await deleteDoc(doc(db, "tasks", selectedTask.id));
+        console.log('Task deleted:', selectedTask.id);
+
+        // Update local data
+        allTasks = allTasks.filter(t => t.id !== selectedTask.id);
+
+        // Close dialog and refresh
+        document.getElementById('editTask').close();
+        renderTasksTab();
+
+        alert('Task deleted successfully!');
+        selectedTask = null;
+
+    } catch (error) {
+        console.error('Error deleting task:', error);
+        alert('Error deleting task: ' + error.message);
     }
 }
