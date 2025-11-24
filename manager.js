@@ -842,24 +842,46 @@ function renderTasksTab() {
         return;
     }
 
+    const now = new Date();
+
     // Group tasks by status
-    const incompleteTasks = sortedTasks.filter(t => !t.completed);
-    const completedTasks = sortedTasks.filter(t => t.completed);
+    // Archived: completed OR (nonflexible AND past due date)
+    const archivedTasks = sortedTasks.filter(t => {
+        if (t.completed) return true;
+
+        if (t.nonflexible && t.due) {
+            const dueDate = t.due.toDate ? t.due.toDate() : new Date(t.due);
+            return dueDate < now;
+        }
+
+        return false;
+    });
+
+    const activeTasks = sortedTasks.filter(t => {
+        if (t.completed) return false;
+
+        if (t.nonflexible && t.due) {
+            const dueDate = t.due.toDate ? t.due.toDate() : new Date(t.due);
+            return dueDate >= now;
+        }
+
+        return true;
+    });
 
     let html = '';
 
-    // Render incomplete tasks
-    if (incompleteTasks.length > 0) {
+    // Render active tasks
+    if (activeTasks.length > 0) {
         html += '<h4>Active Tasks</h4>';
-        incompleteTasks.forEach(task => {
+        activeTasks.forEach(task => {
             html += renderTaskCard(task);
         });
     }
 
-    // Render completed tasks
-    if (completedTasks.length > 0) {
-        html += `<details style="margin-top: 2rem;"><summary><h4 style="display: inline;">Completed Tasks (${completedTasks.length})</h4></summary>`;
-        completedTasks.forEach(task => {
+    // Render archived tasks
+    if (archivedTasks.length > 0) {
+        html += `<details style="margin-top: 2rem;"><summary><h4 style="display: inline;">Archived Tasks (${archivedTasks.length})</h4></summary>`;
+        archivedTasks.forEach(task => {
             html += renderTaskCard(task);
         });
         html += '</details>';
