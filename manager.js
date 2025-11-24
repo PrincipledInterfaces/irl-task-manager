@@ -874,7 +874,7 @@ function renderTasksTab() {
     if (activeTasksList.length > 0) {
         html += '<h4>Active Tasks</h4>';
         activeTasksList.forEach(task => {
-            html += renderTaskCard(task);
+            html += renderTaskCard(task, false);
         });
     }
 
@@ -882,7 +882,7 @@ function renderTasksTab() {
     if (archivedTasks.length > 0) {
         html += `<details style="margin-top: 2rem;"><summary><h4 style="display: inline;">Archived Tasks (${archivedTasks.length})</h4></summary>`;
         archivedTasks.forEach(task => {
-            html += renderTaskCard(task);
+            html += renderTaskCard(task, true);
         });
         html += '</details>';
     }
@@ -900,7 +900,7 @@ function renderTasksTab() {
 }
 
 // Render a single task card
-function renderTaskCard(task) {
+function renderTaskCard(task, isArchived = false) {
     // Use icon from database, fallback to 'list' if not set
     const icon = task.icon || 'list';
     const assignedCount = task.assignedTo ? task.assignedTo.length : 0;
@@ -910,7 +910,7 @@ function renderTaskCard(task) {
     const completedBadge = task.completed ? '<span class="badge badge-green">Completed</span> ' : '';
 
     return `
-        <article class="task-card" data-task-id="${task.id}" style="cursor: pointer; opacity: ${task.completed ? '0.6' : '1'};">
+        <article class="task-card" data-task-id="${task.id}" style="cursor: pointer; opacity: ${isArchived ? '0.6' : '1'};">
             <h4><i class="fa-solid fa-${icon}"></i> ${task.title}</h4>
             <p style="color: #888; margin-bottom: 0.5rem;">${task.description || 'No description'}</p>
             <div style="display: flex; gap: 10px; flex-wrap: wrap; align-items: center;">
