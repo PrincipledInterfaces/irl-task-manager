@@ -251,6 +251,81 @@
                 </div>
                 <button id="createTaskBtn"><i class="fa-solid fa-plus"></i> Create Task</button>
             </div>
+
+            <!-- Filters Section -->
+            <details style="margin-bottom: 1.5rem;">
+                <summary><i class="fa-solid fa-filter"></i> Filter Tasks</summary>
+                <article style="margin-top: 0.5rem;">
+                    <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(250px, 1fr)); gap: 1rem;">
+                        <!-- Due Date Filter -->
+                        <div>
+                            <label for="filterDueFrom"><strong>Due Date From:</strong></label>
+                            <input type="date" id="filterDueFrom" aria-label="Due date from">
+                        </div>
+                        <div>
+                            <label for="filterDueTo"><strong>Due Date To:</strong></label>
+                            <input type="date" id="filterDueTo" aria-label="Due date to">
+                        </div>
+
+                        <!-- Hours Filter -->
+                        <div>
+                            <label for="filterHoursMin"><strong>Min Hours:</strong></label>
+                            <input type="number" id="filterHoursMin" min="0" placeholder="0" aria-label="Minimum hours">
+                        </div>
+                        <div>
+                            <label for="filterHoursMax"><strong>Max Hours:</strong></label>
+                            <input type="number" id="filterHoursMax" min="0" placeholder="Any" aria-label="Maximum hours">
+                        </div>
+                    </div>
+
+                    <hr>
+
+                    <!-- Location Filter -->
+                    <div style="margin-bottom: 1rem;">
+                        <strong>Location:</strong>
+                        <div style="display: flex; gap: 15px; flex-wrap: wrap; margin-top: 0.5rem;">
+                            <label><input type="checkbox" class="filter-location" value="IRL 1" checked> IRL 1</label>
+                            <label><input type="checkbox" class="filter-location" value="IRL 2" checked> IRL 2</label>
+                            <label><input type="checkbox" class="filter-location" value="Remote" checked> Remote</label>
+                            <label><input type="checkbox" class="filter-location" value="custom" checked> Custom</label>
+                        </div>
+                    </div>
+
+                    <!-- Category Filter -->
+                    <div style="margin-bottom: 1rem;">
+                        <strong>Category:</strong>
+                        <div style="display: flex; gap: 15px; flex-wrap: wrap; margin-top: 0.5rem;">
+                            <label><input type="checkbox" class="filter-category" value="Workshop" checked> Workshop</label>
+                            <label><input type="checkbox" class="filter-category" value="Maintenance" checked> Maintenance</label>
+                            <label><input type="checkbox" class="filter-category" value="Project" checked> Project</label>
+                            <label><input type="checkbox" class="filter-category" value="Media" checked> Media</label>
+                            <label><input type="checkbox" class="filter-category" value="Event" checked> Event</label>
+                            <label><input type="checkbox" class="filter-category" value="Other" checked> Other</label>
+                        </div>
+                    </div>
+
+                    <!-- Priority Filter -->
+                    <div style="margin-bottom: 1rem;">
+                        <label><input type="checkbox" id="filterPriorityOnly"> Show only high priority tasks</label>
+                    </div>
+
+                    <!-- Skills Filter -->
+                    <div style="margin-bottom: 1rem;">
+                        <strong>Required Skills (show tasks requiring ANY of these):</strong>
+                        <div id="filterSkillsContainer" style="display: flex; gap: 15px; flex-wrap: wrap; margin-top: 0.5rem;">
+                            <!-- Will be populated by manager.js -->
+                        </div>
+                    </div>
+
+                    <hr>
+
+                    <div style="display: flex; gap: 10px; justify-content: flex-end;">
+                        <button id="clearFiltersBtn" style="background-color: #888; border-color: #888;"><i class="fa-solid fa-xmark"></i> Clear Filters</button>
+                        <button id="applyFiltersBtn"><i class="fa-solid fa-check"></i> Apply Filters</button>
+                    </div>
+                </article>
+            </details>
+
             <div id="tasksContainer">
                 <!-- Tasks will be populated by manager.js -->
                 <div style="display:flex;justify-content:center;align-items:center;min-height:150px;">
@@ -271,7 +346,7 @@
         </div>
     </main>
 
-    <dialog id="editUser">
+    <dialog id="editUser" open>
         <article>
             <header>
                 <button aria-label="Close" rel="prev"></button>
@@ -280,6 +355,9 @@
                 </p>
             </header>
             <h2><i class="fa-solid fa-user"></i> Auriel Kremp</h2>
+            <hr>
+            <h5>Allowed Hours per Quarter:</h5>
+            <input type="number" id="userAllowedHours" value="25" min="0" style="width: 80px;">
             <hr>
             <div style="display: flex; gap: 20px; align-items: stretch;">
                 <div style="flex: 1; display: flex; flex-direction: column;">

@@ -6,6 +6,35 @@ import { getPageUrl } from './utils.js';
 let currentUser = null;
 let tasksData = [];
 
+// Available skills from skills.txt
+const AVAILABLE_SKILLS = [
+    "Textiles",
+    "Screen Printing",
+    "3D Printer (FDM)",
+    "3D Printer (Resin)",
+    "Laser Cutter",
+    "Wood Shop",
+    "Programming",
+    "Mechanical",
+    "Electronics",
+    "3D Modeling",
+    "Graphic Design",
+    "Photo/Video",
+    "CNC"
+];
+
+// Task filter state
+let taskFilters = {
+    dueFrom: null,
+    dueTo: null,
+    hoursMin: null,
+    hoursMax: null,
+    locations: ['IRL 1', 'IRL 2', 'Remote', 'custom'],
+    categories: ['Workshop', 'Maintenance', 'Project', 'Media', 'Event', 'Other'],
+    priorityOnly: false,
+    skills: []
+};
+
 // Check auth state and redirect if not logged in
 onAuthStateChanged(auth, async (user) => {
     if (user) {
@@ -20,6 +49,7 @@ onAuthStateChanged(auth, async (user) => {
 
             // Load tasks and render board
             await loadTasks();
+            setupTaskFilters();
             renderBoard();
         }
     } else {
@@ -67,6 +97,40 @@ async function loadTasks() {
     }
 }
 
+// Helper function to check if a date is in the current week
+function isDateInCurrentWeek(date) {
+    const now = new Date();
+    const startOfWeek = new Date(now);
+    startOfWeek.setDate(now.getDate() - now.getDay()); // Sunday
+    startOfWeek.setHours(0, 0, 0, 0);
+
+    const endOfWeek = new Date(startOfWeek);
+    endOfWeek.setDate(startOfWeek.getDate() + 7);
+
+    return date >= startOfWeek && date < endOfWeek;
+}
+
+// Calculate current user's weekly hours from assigned tasks
+function calculateUserWeeklyHours() {
+    if (!currentUser) return 0;
+
+    let weeklyHours = 0;
+
+    tasksData.forEach(task => {
+        // Only count if task is assigned to current user and not completed
+        if (task.assignedTo && task.assignedTo.includes(currentUser.id) && !task.completed) {
+            if (task.due) {
+                const dueDate = task.due.toDate ? task.due.toDate() : new Date(task.due);
+                if (isDateInCurrentWeek(dueDate)) {
+                    weeklyHours += task.hours || 0;
+                }
+            }
+        }
+    });
+
+    return weeklyHours;
+}
+
 // Render a single job card
 function renderJobCard(task) {
     const workerSlots = task.workerSlots || 1; // Default to 1 slot if not specified
@@ -86,6 +150,25 @@ function renderJobCard(task) {
 
         if (!hasRequiredSkills) {
             skillsTooltip = `You need one of these skills: ${task.requiredSkills.join(', ')}`;
+        }
+    }
+
+    // Check if claiming this task would exceed user's allowed weekly hours
+    let withinHoursLimit = true;
+    let hoursTooltip = '';
+    if (currentUser && task.due) {
+        const taskDueDate = task.due.toDate ? task.due.toDate() : new Date(task.due);
+        // Only check hours limit if task is due this week
+        if (isDateInCurrentWeek(taskDueDate)) {
+            const currentWeeklyHours = calculateUserWeeklyHours();
+            const taskHours = task.hours || 0;
+            const allowedHours = currentUser.allowedHours || 0;
+            const projectedHours = currentWeeklyHours + taskHours;
+
+            if (projectedHours > allowedHours) {
+                withinHoursLimit = false;
+                hoursTooltip = `Claiming this task would put you at ${projectedHours} hours this week (limit: ${allowedHours} hours)`;
+            }
         }
     }
 
@@ -110,10 +193,13 @@ function renderJobCard(task) {
 
     // Show claim button if there are open slots and user not already assigned
     if (openSlots > 0 && !isUserAssigned) {
-        if (!hasRequiredSkills) {
-            // Gray out button with tooltip if user lacks required skills
+        // Check both skills and hours limit
+        if (!hasRequiredSkills || !withinHoursLimit) {
+            // Determine which tooltip to show (skills takes priority if both fail)
+            const tooltip = !hasRequiredSkills ? skillsTooltip : hoursTooltip;
+            // Gray out button with tooltip if user lacks required skills or exceeds hours limit
             // Wrap disabled button in span with tooltip since disabled buttons don't trigger hover
-            assignmentSection += `<div style="text-align: center;"><span data-tooltip="${skillsTooltip}" style="display: inline-block;"><button data-job-id="${task.id}" disabled>Claim Assignment</button></span></div>`;
+            assignmentSection += `<div style="text-align: center;"><span data-tooltip="${tooltip}" style="display: inline-block;"><button data-job-id="${task.id}" disabled>Claim Assignment</button></span></div>`;
         } else {
             assignmentSection += `<div style="text-align: center;"><button data-job-id="${task.id}">Claim Assignment</button></div>`;
         }
@@ -175,7 +261,8 @@ function renderBoard() {
     // Filter tasks:
     // 1. Only show non-completed tasks
     // 2. Hide nonflexible tasks that are past due and not claimed/completed
-    const activeTasks = tasksData.filter(task => {
+    // 3. Apply user filters
+    let activeTasks = tasksData.filter(task => {
         // Skip completed tasks
         if (task.completed) return false;
 
@@ -194,10 +281,13 @@ function renderBoard() {
         return true;
     });
 
-    console.log("Active (non-completed) tasks:", activeTasks.length);
+    // Apply user-defined filters
+    activeTasks = filterTasks(activeTasks);
+
+    console.log("Active (non-completed) tasks after filtering:", activeTasks.length);
     console.log("Active tasks:", activeTasks);
     if (activeTasks.length === 0) {
-        boardContainer.innerHTML = '<h4>No available tasks at the moment.</h4>';
+        boardContainer.innerHTML = '<h4>No tasks match the current filters. Try adjusting your filter settings.</h4>';
         return;
     } else {
         boardContainer.innerHTML = activeTasks.map(task => renderJobCard(task)).join('');
@@ -330,4 +420,157 @@ async function handleClaim(event) {
         console.error("Error claiming task:", error);
         alert("Error claiming task: " + error.message);
     }
+}
+
+// ==================== TASK FILTER FUNCTIONS ====================
+
+// Setup task filters
+function setupTaskFilters() {
+    // Populate skills checkboxes
+    const skillsContainer = document.getElementById('filterSkillsContainer');
+    if (skillsContainer) {
+        skillsContainer.innerHTML = AVAILABLE_SKILLS.map(skill =>
+            `<label><input type="checkbox" class="filter-skill" value="${skill}"> ${skill}</label>`
+        ).join('');
+    }
+
+    // Apply filters button
+    const applyBtn = document.getElementById('applyFiltersBtn');
+    if (applyBtn) {
+        applyBtn.addEventListener('click', () => {
+            applyTaskFilters();
+            renderBoard();
+        });
+    }
+
+    // Clear filters button
+    const clearBtn = document.getElementById('clearFiltersBtn');
+    if (clearBtn) {
+        clearBtn.addEventListener('click', () => {
+            clearTaskFilters();
+            renderBoard();
+        });
+    }
+}
+
+// Apply current filter settings from UI
+function applyTaskFilters() {
+    // Due date filters
+    const dueFrom = document.getElementById('filterDueFrom').value;
+    const dueTo = document.getElementById('filterDueTo').value;
+    taskFilters.dueFrom = dueFrom ? new Date(dueFrom) : null;
+    taskFilters.dueTo = dueTo ? new Date(dueTo) : null;
+    if (taskFilters.dueTo) {
+        // Set to end of day
+        taskFilters.dueTo.setHours(23, 59, 59, 999);
+    }
+
+    // Hours filters
+    const hoursMin = document.getElementById('filterHoursMin').value;
+    const hoursMax = document.getElementById('filterHoursMax').value;
+    taskFilters.hoursMin = hoursMin ? parseInt(hoursMin) : null;
+    taskFilters.hoursMax = hoursMax ? parseInt(hoursMax) : null;
+
+    // Location filters
+    const locationCheckboxes = document.querySelectorAll('.filter-location');
+    taskFilters.locations = Array.from(locationCheckboxes)
+        .filter(cb => cb.checked)
+        .map(cb => cb.value);
+
+    // Category filters
+    const categoryCheckboxes = document.querySelectorAll('.filter-category');
+    taskFilters.categories = Array.from(categoryCheckboxes)
+        .filter(cb => cb.checked)
+        .map(cb => cb.value);
+
+    // Priority filter
+    taskFilters.priorityOnly = document.getElementById('filterPriorityOnly').checked;
+
+    // Skills filters
+    const skillCheckboxes = document.querySelectorAll('.filter-skill');
+    taskFilters.skills = Array.from(skillCheckboxes)
+        .filter(cb => cb.checked)
+        .map(cb => cb.value);
+
+    console.log('Filters applied:', taskFilters);
+}
+
+// Clear all filters
+function clearTaskFilters() {
+    // Reset filter state
+    taskFilters = {
+        dueFrom: null,
+        dueTo: null,
+        hoursMin: null,
+        hoursMax: null,
+        locations: ['IRL 1', 'IRL 2', 'Remote', 'custom'],
+        categories: ['Workshop', 'Maintenance', 'Project', 'Media', 'Event', 'Other'],
+        priorityOnly: false,
+        skills: []
+    };
+
+    // Reset UI
+    document.getElementById('filterDueFrom').value = '';
+    document.getElementById('filterDueTo').value = '';
+    document.getElementById('filterHoursMin').value = '';
+    document.getElementById('filterHoursMax').value = '';
+    document.getElementById('filterPriorityOnly').checked = false;
+
+    document.querySelectorAll('.filter-location').forEach(cb => cb.checked = true);
+    document.querySelectorAll('.filter-category').forEach(cb => cb.checked = true);
+    document.querySelectorAll('.filter-skill').forEach(cb => cb.checked = false);
+
+    console.log('Filters cleared');
+}
+
+// Filter tasks based on current filter settings
+function filterTasks(tasks) {
+    return tasks.filter(task => {
+        // Due date filter
+        if (taskFilters.dueFrom || taskFilters.dueTo) {
+            if (!task.due) return false;
+            const taskDueDate = task.due.toDate ? task.due.toDate() : new Date(task.due);
+
+            if (taskFilters.dueFrom && taskDueDate < taskFilters.dueFrom) return false;
+            if (taskFilters.dueTo && taskDueDate > taskFilters.dueTo) return false;
+        }
+
+        // Hours filter
+        const taskHours = task.hours || 0;
+        if (taskFilters.hoursMin !== null && taskHours < taskFilters.hoursMin) return false;
+        if (taskFilters.hoursMax !== null && taskHours > taskFilters.hoursMax) return false;
+
+        // Location filter
+        if (taskFilters.locations.length > 0) {
+            const taskLocation = task.location || 'IRL 1';
+            // Check if it's a custom location
+            const isCustomLocation = !['IRL 1', 'IRL 2', 'Remote'].includes(taskLocation);
+
+            if (isCustomLocation) {
+                if (!taskFilters.locations.includes('custom')) return false;
+            } else {
+                if (!taskFilters.locations.includes(taskLocation)) return false;
+            }
+        }
+
+        // Category filter
+        if (taskFilters.categories.length > 0) {
+            const taskCategory = task.category || 'Other';
+            if (!taskFilters.categories.includes(taskCategory)) return false;
+        }
+
+        // Priority filter
+        if (taskFilters.priorityOnly && !task.priority) return false;
+
+        // Skills filter (show tasks that have ANY of the selected skills, or tasks with no required skills)
+        if (taskFilters.skills.length > 0) {
+            const taskSkills = task.requiredSkills || [];
+            if (taskSkills.length > 0) {
+                const hasMatchingSkill = taskSkills.some(skill => taskFilters.skills.includes(skill));
+                if (!hasMatchingSkill) return false;
+            }
+        }
+
+        return true;
+    });
 }

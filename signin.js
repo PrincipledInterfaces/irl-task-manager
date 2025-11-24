@@ -81,7 +81,8 @@ async function createAccount(email, password, fullName) {
             email: email,
             fullName: fullName,
             role: "user",  // Default to user, managers set manually in Firebase Console
-            assignedJobIds: []
+            assignedJobIds: [],
+            allowedHours: 25
         });
         console.log("Firestore document created successfully!");
 

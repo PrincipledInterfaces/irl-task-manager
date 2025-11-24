@@ -20,10 +20,11 @@ onAuthStateChanged(auth, async (user) => {
 
             // Update greeting
             const nameText = document.getElementById('nameText');
-            nameText.textContent = `Hello ${currentUser.fullName}, you have the following tasks...`;
+            nameText.textContent = `Hello ${currentUser.fullName}!`;
 
             // Load tasks and render board
             await loadTasks();
+            renderWeeklyHours();
             renderBoard();
 
             // Setup logout button
@@ -87,6 +88,82 @@ async function loadTasks() {
         console.error("Error loading tasks:", error);
         console.error("Error code:", error.code);
         console.error("Error message:", error.message);
+    }
+}
+
+// Helper function to check if a date is in the current week
+function isDateInCurrentWeek(date) {
+    const now = new Date();
+    const startOfWeek = new Date(now);
+    startOfWeek.setDate(now.getDate() - now.getDay()); // Sunday
+    startOfWeek.setHours(0, 0, 0, 0);
+
+    const endOfWeek = new Date(startOfWeek);
+    endOfWeek.setDate(startOfWeek.getDate() + 7);
+
+    return date >= startOfWeek && date < endOfWeek;
+}
+
+// Calculate and render weekly hours usage
+function renderWeeklyHours() {
+    const allowedHours = currentUser.allowedHours || 0;
+
+    // Calculate weekly hours from user's assigned tasks that are due this week
+    let weeklyHours = 0;
+
+    tasksData.forEach(task => {
+        // Only count if task is assigned to current user and not completed
+        if (task.assignedTo && task.assignedTo.includes(currentUser.id) && !task.completed) {
+            if (task.due) {
+                const dueDate = task.due.toDate ? task.due.toDate() : new Date(task.due);
+                if (isDateInCurrentWeek(dueDate)) {
+                    weeklyHours += task.hours || 0;
+                }
+            }
+        }
+    });
+
+    console.log(`Weekly hours: ${weeklyHours} / ${allowedHours}`);
+
+    // Update circular progress
+    updateCircularProgress(weeklyHours, allowedHours);
+}
+
+// Helper function to update circular progress bar
+function updateCircularProgress(used, budget) {
+    const remaining = budget - used;
+    const percentage = budget > 0 ? Math.min((used / budget) * 100, 100) : 0;
+    const isOverBudget = remaining < 0;
+
+    // Update text
+    document.getElementById('weeklyUsage').textContent = `${used} out of ${budget} hours this week`;
+
+    const remainingElement = document.getElementById('weeklyRemaining');
+    remainingElement.textContent = `${Math.abs(remaining)} hours ${remaining >= 0 ? 'remaining' : 'over budget'}`;
+
+    // Add/remove negative class
+    if (isOverBudget) {
+        remainingElement.classList.add('negative');
+    } else {
+        remainingElement.classList.remove('negative');
+    }
+
+    // Update percentage display
+    document.getElementById('weeklyPercent').textContent = `${Math.round(percentage)}%`;
+
+    // Update circular progress
+    const circle = document.getElementById('weeklyCircle');
+    const radius = 54;
+    const circumference = 2 * Math.PI * radius; // 339.292
+    const offset = circumference - (percentage / 100 * circumference);
+
+    circle.style.strokeDashoffset = offset;
+
+    // Add/remove over-budget class
+    if (isOverBudget) {
+        circle.classList.add('over-budget');
+    } else {
+        circle.classList.remove('over-budget');
     }
 }
 
@@ -283,7 +360,8 @@ async function handleUnclaim(event) {
                 currentUser.assignedJobIds.splice(index, 1);
             }
 
-            // Re-render the board to show updated state
+            // Re-render the board and hours to show updated state
+            renderWeeklyHours();
             renderBoard();
 
             console.log(`Task ${taskId} unclaimed by ${currentUser.fullName}`);
@@ -326,7 +404,8 @@ async function handleComplete(event) {
                 currentUser.assignedJobIds.splice(index, 1);
             }
 
-            // Re-render the board to show updated state
+            // Re-render the board and hours to show updated state
+            renderWeeklyHours();
             renderBoard();
 
             console.log(`Task ${taskId} completed by ${currentUser.fullName}`);

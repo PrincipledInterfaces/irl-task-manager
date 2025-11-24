@@ -11,6 +11,18 @@ let selectedTask = null;
 let budgetData = null;
 let quarterDates = null; // Store DePaul quarter dates
 
+// Task filter state
+let taskFilters = {
+    dueFrom: null,
+    dueTo: null,
+    hoursMin: null,
+    hoursMax: null,
+    locations: ['IRL 1', 'IRL 2', 'Remote', 'custom'],
+    categories: ['Workshop', 'Maintenance', 'Project', 'Media', 'Event', 'Other'],
+    priorityOnly: false,
+    skills: []
+};
+
 // Available skills from skills.txt
 const AVAILABLE_SKILLS = [
     "Textiles",
@@ -67,6 +79,9 @@ onAuthStateChanged(auth, async (user) => {
 
             // Setup task dialog
             setupTaskDialog();
+
+            // Setup task filters
+            setupTaskFilters();
 
             // Setup hours calculation mode switch
             setupHoursCalculationSwitch();
@@ -295,6 +310,34 @@ function openUserDialog(userId) {
                 });
             });
         }, 0);
+    }
+
+    // Populate allowed hours
+    const allowedHoursInput = document.getElementById('userAllowedHours');
+    if (allowedHoursInput) {
+        allowedHoursInput.value = selectedUser.allowedHours || 25;
+
+        // Add change listener to save allowed hours
+        allowedHoursInput.addEventListener('change', async () => {
+            const newAllowedHours = parseInt(allowedHoursInput.value) || 25;
+            try {
+                await updateDoc(doc(db, "users", selectedUser.id), {
+                    allowedHours: newAllowedHours
+                });
+
+                // Update local data
+                selectedUser.allowedHours = newAllowedHours;
+                const userIndex = allUsers.findIndex(u => u.id === selectedUser.id);
+                if (userIndex !== -1) {
+                    allUsers[userIndex].allowedHours = newAllowedHours;
+                }
+
+                console.log(`Allowed hours updated to ${newAllowedHours} for ${selectedUser.fullName}`);
+            } catch (error) {
+                console.error("Error updating allowed hours:", error);
+                alert("Error updating allowed hours: " + error.message);
+            }
+        });
     }
 
     // Render skills
@@ -818,14 +861,17 @@ function renderTasksTab() {
 
     if (!tasksContainer) return;
 
-    // Count active (non-completed) tasks
-    const activeTasks = allTasks.filter(task => !task.completed);
+    // Apply filters to all tasks first
+    const filteredTasks = filterTasks(allTasks);
+
+    // Count active (non-completed) tasks in filtered results
+    const activeTasks = filteredTasks.filter(task => !task.completed);
 
     // Update greeting
-    taskGreeting.textContent = `There are ${activeTasks.length} active task${activeTasks.length !== 1 ? 's' : ''}.`;
+    taskGreeting.textContent = `Showing ${filteredTasks.length} task${filteredTasks.length !== 1 ? 's' : ''} (${activeTasks.length} active).`;
 
     // Sort tasks: incomplete first, then by due date
-    const sortedTasks = [...allTasks].sort((a, b) => {
+    const sortedTasks = [...filteredTasks].sort((a, b) => {
         if (a.completed !== b.completed) {
             return a.completed ? 1 : -1;
         }
@@ -838,7 +884,7 @@ function renderTasksTab() {
     });
 
     if (sortedTasks.length === 0) {
-        tasksContainer.innerHTML = '<article><p>No tasks found. Create one to get started!</p></article>';
+        tasksContainer.innerHTML = '<article><p>No tasks match the current filters. Try adjusting your filter settings.</p></article>';
         return;
     }
 
@@ -1406,4 +1452,157 @@ async function deleteTask() {
         console.error('Error deleting task:', error);
         alert('Error deleting task: ' + error.message);
     }
+}
+
+// ==================== TASK FILTER FUNCTIONS ====================
+
+// Setup task filters
+function setupTaskFilters() {
+    // Populate skills checkboxes
+    const skillsContainer = document.getElementById('filterSkillsContainer');
+    if (skillsContainer) {
+        skillsContainer.innerHTML = AVAILABLE_SKILLS.map(skill =>
+            `<label><input type="checkbox" class="filter-skill" value="${skill}"> ${skill}</label>`
+        ).join('');
+    }
+
+    // Apply filters button
+    const applyBtn = document.getElementById('applyFiltersBtn');
+    if (applyBtn) {
+        applyBtn.addEventListener('click', () => {
+            applyTaskFilters();
+            renderTasksTab();
+        });
+    }
+
+    // Clear filters button
+    const clearBtn = document.getElementById('clearFiltersBtn');
+    if (clearBtn) {
+        clearBtn.addEventListener('click', () => {
+            clearTaskFilters();
+            renderTasksTab();
+        });
+    }
+}
+
+// Apply current filter settings from UI
+function applyTaskFilters() {
+    // Due date filters
+    const dueFrom = document.getElementById('filterDueFrom').value;
+    const dueTo = document.getElementById('filterDueTo').value;
+    taskFilters.dueFrom = dueFrom ? new Date(dueFrom) : null;
+    taskFilters.dueTo = dueTo ? new Date(dueTo) : null;
+    if (taskFilters.dueTo) {
+        // Set to end of day
+        taskFilters.dueTo.setHours(23, 59, 59, 999);
+    }
+
+    // Hours filters
+    const hoursMin = document.getElementById('filterHoursMin').value;
+    const hoursMax = document.getElementById('filterHoursMax').value;
+    taskFilters.hoursMin = hoursMin ? parseInt(hoursMin) : null;
+    taskFilters.hoursMax = hoursMax ? parseInt(hoursMax) : null;
+
+    // Location filters
+    const locationCheckboxes = document.querySelectorAll('.filter-location');
+    taskFilters.locations = Array.from(locationCheckboxes)
+        .filter(cb => cb.checked)
+        .map(cb => cb.value);
+
+    // Category filters
+    const categoryCheckboxes = document.querySelectorAll('.filter-category');
+    taskFilters.categories = Array.from(categoryCheckboxes)
+        .filter(cb => cb.checked)
+        .map(cb => cb.value);
+
+    // Priority filter
+    taskFilters.priorityOnly = document.getElementById('filterPriorityOnly').checked;
+
+    // Skills filters
+    const skillCheckboxes = document.querySelectorAll('.filter-skill');
+    taskFilters.skills = Array.from(skillCheckboxes)
+        .filter(cb => cb.checked)
+        .map(cb => cb.value);
+
+    console.log('Filters applied:', taskFilters);
+}
+
+// Clear all filters
+function clearTaskFilters() {
+    // Reset filter state
+    taskFilters = {
+        dueFrom: null,
+        dueTo: null,
+        hoursMin: null,
+        hoursMax: null,
+        locations: ['IRL 1', 'IRL 2', 'Remote', 'custom'],
+        categories: ['Workshop', 'Maintenance', 'Project', 'Media', 'Event', 'Other'],
+        priorityOnly: false,
+        skills: []
+    };
+
+    // Reset UI
+    document.getElementById('filterDueFrom').value = '';
+    document.getElementById('filterDueTo').value = '';
+    document.getElementById('filterHoursMin').value = '';
+    document.getElementById('filterHoursMax').value = '';
+    document.getElementById('filterPriorityOnly').checked = false;
+
+    document.querySelectorAll('.filter-location').forEach(cb => cb.checked = true);
+    document.querySelectorAll('.filter-category').forEach(cb => cb.checked = true);
+    document.querySelectorAll('.filter-skill').forEach(cb => cb.checked = false);
+
+    console.log('Filters cleared');
+}
+
+// Filter tasks based on current filter settings
+function filterTasks(tasks) {
+    return tasks.filter(task => {
+        // Due date filter
+        if (taskFilters.dueFrom || taskFilters.dueTo) {
+            if (!task.due) return false;
+            const taskDueDate = task.due.toDate ? task.due.toDate() : new Date(task.due);
+
+            if (taskFilters.dueFrom && taskDueDate < taskFilters.dueFrom) return false;
+            if (taskFilters.dueTo && taskDueDate > taskFilters.dueTo) return false;
+        }
+
+        // Hours filter
+        const taskHours = task.hours || 0;
+        if (taskFilters.hoursMin !== null && taskHours < taskFilters.hoursMin) return false;
+        if (taskFilters.hoursMax !== null && taskHours > taskFilters.hoursMax) return false;
+
+        // Location filter
+        if (taskFilters.locations.length > 0) {
+            const taskLocation = task.location || 'IRL 1';
+            // Check if it's a custom location
+            const isCustomLocation = !['IRL 1', 'IRL 2', 'Remote'].includes(taskLocation);
+
+            if (isCustomLocation) {
+                if (!taskFilters.locations.includes('custom')) return false;
+            } else {
+                if (!taskFilters.locations.includes(taskLocation)) return false;
+            }
+        }
+
+        // Category filter
+        if (taskFilters.categories.length > 0) {
+            const taskCategory = task.category || 'Other';
+            if (!taskFilters.categories.includes(taskCategory)) return false;
+        }
+
+        // Priority filter
+        if (taskFilters.priorityOnly && !task.priority) return false;
+
+        // Skills filter (show tasks that have ANY of the selected skills, or tasks with no required skills)
+        if (taskFilters.skills.length > 0) {
+            const taskSkills = task.requiredSkills || [];
+            if (taskSkills.length > 0) {
+                const hasMatchingSkill = taskSkills.some(skill => taskFilters.skills.includes(skill));
+                if (!hasMatchingSkill) return false;
+            }
+        }
+
+        return true;
+    });
 }
