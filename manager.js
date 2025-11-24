@@ -857,7 +857,7 @@ function renderTasksTab() {
         return false;
     });
 
-    const activeTasks = sortedTasks.filter(t => {
+    const activeTasksList = sortedTasks.filter(t => {
         if (t.completed) return false;
 
         if (t.nonflexible && t.due) {
@@ -871,9 +871,9 @@ function renderTasksTab() {
     let html = '';
 
     // Render active tasks
-    if (activeTasks.length > 0) {
+    if (activeTasksList.length > 0) {
         html += '<h4>Active Tasks</h4>';
-        activeTasks.forEach(task => {
+        activeTasksList.forEach(task => {
             html += renderTaskCard(task);
         });
     }
