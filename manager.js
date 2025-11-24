@@ -660,7 +660,9 @@ function setupHoursCalculationSwitch() {
 }
 
 function renderHours() {
+    console.log('======================================');
     console.log('[Render Hours] Starting hour calculation...');
+    console.log('======================================');
 
     // Check if budget data is loaded
     if (!budgetData) {
@@ -681,6 +683,10 @@ function renderHours() {
     var totalHoursYear = 0;
     var totalHoursQuarter = 0;
     var totalHoursWeek = 0;
+
+    var tasksCountedYear = 0;
+    var tasksCountedQuarter = 0;
+    var tasksCountedWeek = 0;
 
     allTasks.forEach(function(element, index) {
         // Determine if we should count this task
@@ -718,15 +724,18 @@ function renderHours() {
 
             if (isDateInCurrentYear(dateToCheck)) {
                 totalHoursYear += element.hours || 0;
-                console.log(`  ✓ Added to year total. Year total now: ${totalHoursYear}`);
+                tasksCountedYear++;
+                console.log(`  ✓ Added to year total. Year total now: ${totalHoursYear} (${tasksCountedYear} tasks)`);
 
                 if (isDateInCurrentQuarter(dateToCheck)) {
                     totalHoursQuarter += element.hours || 0;
-                    console.log(`  ✓ Added to quarter total. Quarter total now: ${totalHoursQuarter}`);
+                    tasksCountedQuarter++;
+                    console.log(`  ✓ Added to quarter total. Quarter total now: ${totalHoursQuarter} (${tasksCountedQuarter} tasks)`);
 
                     if (isDateInCurrentWeek(dateToCheck)) {
                         totalHoursWeek += element.hours || 0;
-                        console.log(`  ✓ Added to week total. Week total now: ${totalHoursWeek}`);
+                        tasksCountedWeek++;
+                        console.log(`  ✓ Added to week total. Week total now: ${totalHoursWeek} (${tasksCountedWeek} tasks)`);
                     }
                 }
             }
@@ -735,10 +744,12 @@ function renderHours() {
         }
     });
 
+    console.log('======================================');
     console.log('[Render Hours] Final totals:');
-    console.log(`  Week: ${totalHoursWeek} / ${budgetData.weeklyBudget}`);
-    console.log(`  Quarter: ${totalHoursQuarter} / ${budgetData.quarterlyBudget}`);
-    console.log(`  Year: ${totalHoursYear} / ${budgetData.yearlyBudget}`);
+    console.log(`  Week: ${totalHoursWeek} hours from ${tasksCountedWeek} tasks (budget: ${budgetData.weeklyBudget})`);
+    console.log(`  Quarter: ${totalHoursQuarter} hours from ${tasksCountedQuarter} tasks (budget: ${budgetData.quarterlyBudget})`);
+    console.log(`  Year: ${totalHoursYear} hours from ${tasksCountedYear} tasks (budget: ${budgetData.yearlyBudget})`);
+    console.log('======================================');
 
     // Update circular progress bars
     updateCircularProgress('weekly', totalHoursWeek, budgetData.weeklyBudget, 'this week');
@@ -1544,12 +1555,6 @@ function setupTaskFilters() {
         applyBtn.addEventListener('click', () => {
             applyTaskFilters();
             renderTasksTab();
-
-            // Collapse the filter panel
-            const filterDetails = applyBtn.closest('details');
-            if (filterDetails) {
-                filterDetails.removeAttribute('open');
-            }
         });
     }
 
