@@ -1072,7 +1072,7 @@ function openTaskDialog(taskId) {
         // Populate form
         document.getElementById('taskName').textContent = selectedTask.title || '';
         document.getElementById('taskPriority').checked = selectedTask.priority || false;
-        document.getElementById('taskDescription').textContent = selectedTask.description || '';
+        document.getElementById('taskDescription').textContent = selectedTask.description || 'Task Description goes here :)';
         document.getElementById('taskHours').value = selectedTask.hours || 0;
         document.getElementById('taskApprentice').checked = selectedTask.apprenticeTask || false;
         document.getElementById('taskNonflexible').checked = selectedTask.nonflexible || false;
