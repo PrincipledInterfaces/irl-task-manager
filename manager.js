@@ -1711,7 +1711,8 @@ function filterTasks(tasks) {
 function setupEditBudgetButton() {
     const editBudgetBtn = document.getElementById('editBudget');
     if (editBudgetBtn) {
-        editBudgetBtn.addEventListener('click', () => {
+        editBudgetBtn.addEventListener('click', (e) => {
+            e.preventDefault();
             const dialog = document.getElementById('editBudgetDialog');
             const quarterlyInput = document.getElementById('quarterlyBudgetInput');
             const weeklyInput = document.getElementById('weeklyBudgetInput');

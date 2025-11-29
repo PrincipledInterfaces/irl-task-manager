@@ -16,6 +16,7 @@ node_modules/
 # OS specific files
 .DS_Store
 Thumbs.db
+WHENIWORK_SETUP.md
 
 # Log files
 *.log

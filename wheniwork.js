@@ -1,17 +1,66 @@
-// Configuration - move these to environment variables or a secure config
-const CONFIG = {
-  apiKey: process.env.WHENIWORK_API_KEY || 'YOUR_API_KEY',
-  email: process.env.WHENIWORK_EMAIL || 'YOUR_EMAIL',
-  password: process.env.WHENIWORK_PASSWORD || 'YOUR_PASSWORD'
+// Import necessary modules
+import { auth } from './firebase-config.js';
+import { getApiUrl } from './utils.js';
+
+// Configuration - will be loaded from server
+let CONFIG = {
+  apiKey: '',
+  email: '',
+  password: ''
 };
 
 let token = null;
 let userId = null;
 let users = [];
+let configLoaded = false;
+
+// Load credentials from server
+async function loadCredentials() {
+  if (configLoaded) return CONFIG;
+
+  try {
+    // Get current user's auth token
+    const currentUser = auth.currentUser;
+    if (!currentUser) {
+      console.warn('[WhenIWork] No authenticated user - cannot load credentials');
+      return CONFIG;
+    }
+
+    const idToken = await currentUser.getIdToken();
+
+    // Fetch credentials from server
+    const response = await fetch(getApiUrl('wheniwork-credentials'), {
+      headers: {
+        'Authorization': `Bearer ${idToken}`
+      }
+    });
+
+    if (!response.ok) {
+      throw new Error(`Failed to load WhenIWork credentials: ${response.statusText}`);
+    }
+
+    const credentials = await response.json();
+    CONFIG = credentials;
+    configLoaded = true;
+    console.log('[WhenIWork] Credentials loaded successfully');
+    return CONFIG;
+
+  } catch (error) {
+    console.error('[WhenIWork] Error loading credentials:', error);
+    return CONFIG;
+  }
+}
 
 // Login and initialize
 async function login() {
   try {
+    // Load credentials from server first
+    await loadCredentials();
+
+    if (!CONFIG.apiKey || !CONFIG.email || !CONFIG.password) {
+      throw new Error('WhenIWork credentials not configured');
+    }
+
     const loginResponse = await fetch('https://api.login.wheniwork.com/login', {
       method: 'POST',
       headers: {
@@ -116,16 +165,20 @@ function getUser(searchString) {
 // Initialize everything
 async function initialize() {
   try {
+    await loadCredentials();
     await login();
     await getAllUsers();
-    console.log('Initialization complete');
+    console.log('[WhenIWork] Initialization complete');
   } catch (error) {
-    console.error('Initialization failed:', error);
+    console.error('[WhenIWork] Initialization failed:', error);
   }
 }
 
-function getScheduledWeek() {
-    login();
+// Export the loadCredentials function so it can be called before other functions
+export { loadCredentials, initialize, login, getAllUsers, getUser, getShifts, getScheduledWeek, getScheduledQuarter, getScheduledYear };
+
+async function getScheduledWeek() {
+    await login();
     const now = new Date();
     hoursToAdd = 0;
     for (var i = 0; i < users.length; i++) {
@@ -155,7 +208,7 @@ function getScheduledWeek() {
 }
 
 async function getScheduledQuarter() {
-    login();
+    await login();
     // Fetch quarter dates (same as loadQuarterDates in manager.js)
     let quarterDates = null;
     try {
@@ -234,7 +287,7 @@ async function getScheduledQuarter() {
 }
 
 async function getScheduledYear() {
-    login();
+    await login();
     // Fetch quarter dates (same as loadQuarterDates in manager.js)
     let quarterDates = null;
     try {

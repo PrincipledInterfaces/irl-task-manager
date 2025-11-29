@@ -44,6 +44,55 @@ app.get('/health', (req, res) => {
   res.json({ status: 'ok', timestamp: new Date().toISOString() });
 });
 
+// WhenIWork credentials endpoint (authenticated)
+app.get('/api/wheniwork-credentials', async (req, res) => {
+  try {
+    // Get the ID token from the Authorization header
+    const authHeader = req.headers.authorization;
+    if (!authHeader || !authHeader.startsWith('Bearer ')) {
+      return res.status(401).json({ error: 'Unauthorized - No token provided' });
+    }
+
+    const idToken = authHeader.split('Bearer ')[1];
+
+    // Verify the ID token
+    let decodedToken;
+    try {
+      decodedToken = await admin.auth().verifyIdToken(idToken);
+    } catch (error) {
+      return res.status(401).json({ error: 'Unauthorized - Invalid token' });
+    }
+
+    // Check if user is a manager (only managers can access WhenIWork credentials)
+    const userDoc = await db.collection('users').doc(decodedToken.uid).get();
+    if (!userDoc.exists || userDoc.data().role !== 'manager') {
+      return res.status(403).json({ error: 'Permission denied - Only managers can access WhenIWork credentials' });
+    }
+
+    // Return credentials from environment variables
+    const credentials = {
+      apiKey: process.env.WHENIWORK_API_KEY || '',
+      email: process.env.WHENIWORK_EMAIL || '',
+      password: process.env.WHENIWORK_PASSWORD || ''
+    };
+
+    // Check if credentials are configured
+    if (!credentials.apiKey || !credentials.email || !credentials.password) {
+      console.warn('WhenIWork credentials not fully configured in environment variables');
+      return res.status(503).json({
+        error: 'WhenIWork credentials not configured on server',
+        configured: false
+      });
+    }
+
+    res.json(credentials);
+
+  } catch (error) {
+    console.error('Error retrieving WhenIWork credentials:', error);
+    res.status(500).json({ error: 'Failed to retrieve credentials' });
+  }
+});
+
 // Debug endpoint to see raw HTML
 app.get('/api/debug-calendar', async (req, res) => {
   try {
