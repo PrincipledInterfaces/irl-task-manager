@@ -86,6 +86,9 @@ onAuthStateChanged(auth, async (user) => {
             // Setup hours calculation mode switch
             setupHoursCalculationSwitch();
 
+            // Setup edit budget button (hour budget dialog)
+            setupEditBudgetButton();
+
             // Render hours
             renderHours();
         }
@@ -1688,4 +1691,169 @@ function filterTasks(tasks) {
 
         return true;
     });
+}
+
+// show hour budget dialog when editBudget is pressed
+function setupEditBudgetButton() {
+    const editBudgetBtn = document.getElementById('editBudget');
+    if (editBudgetBtn) {
+        editBudgetBtn.addEventListener('click', () => {
+            const dialog = document.getElementById('editBudgetDialog');
+            const quarterlyInput = document.getElementById('quarterlyBudgetInput');
+            const weeklyInput = document.getElementById('weeklyBudgetInput');
+            const yearlyInput = document.getElementById('yearlyBudgetInput');
+
+            // Set current budget values (prefer stored values, fall back to derived or 0)
+            quarterlyInput.value = budgetData && typeof budgetData.quarterlyBudget !== 'undefined' ? budgetData.quarterlyBudget : (budgetData && typeof budgetData.weeklyBudget !== 'undefined' ? Math.round((budgetData.weeklyBudget * 52) / 4) : 0);
+            weeklyInput.value = budgetData && typeof budgetData.weeklyBudget !== 'undefined' ? budgetData.weeklyBudget : (budgetData && typeof budgetData.quarterlyBudget !== 'undefined' ? Math.round(budgetData.quarterlyBudget / 13) : 0);
+            yearlyInput.value = budgetData && typeof budgetData.yearlyBudget !== 'undefined' ? budgetData.yearlyBudget : (budgetData && typeof budgetData.quarterlyBudget !== 'undefined' ? Math.round(budgetData.quarterlyBudget * 4) : 0);
+
+            dialog.showModal();
+        });
+    }
+
+    // Autofill button: calculate missing values using Year = Quarterly * 4, Week = Year / 52
+    const autofillBtn = document.getElementById('autofillBudgetBtn');
+    if (autofillBtn) {
+        autofillBtn.addEventListener('click', () => {
+            const q = parseFloat(document.getElementById('quarterlyBudgetInput').value) || null;
+            const w = parseFloat(document.getElementById('weeklyBudgetInput').value) || null;
+            const y = parseFloat(document.getElementById('yearlyBudgetInput').value) || null;
+
+            const computed = computeBudgetValues({ quarterly: q, weekly: w, yearly: y });
+            if (!computed) {
+                alert('Please enter at least one non-negative number to autofill.');
+                return;
+            }
+
+            document.getElementById('quarterlyBudgetInput').value = computed.quarterly;
+            document.getElementById('weeklyBudgetInput').value = computed.weekly;
+            document.getElementById('yearlyBudgetInput').value = computed.yearly;
+        });
+    }
+
+    // Clear (×) buttons next to each field
+    const clearButtons = document.querySelectorAll('.clear-budget-btn');
+    if (clearButtons && clearButtons.length > 0) {
+        clearButtons.forEach(btn => {
+            btn.addEventListener('click', (e) => {
+                e.preventDefault();
+                const targetId = btn.getAttribute('data-target');
+                if (!targetId) return;
+                const input = document.getElementById(targetId);
+                if (input) {
+                    input.value = '';
+                    input.focus();
+                }
+            });
+        });
+    }
+
+    // Save budget button (matches id in manager.html)
+    const saveBudgetBtn = document.getElementById('saveHourBudgetBtn');
+    if (saveBudgetBtn) {
+        saveBudgetBtn.addEventListener('click', async () => {
+            const qInput = document.getElementById('quarterlyBudgetInput').value;
+            const wInput = document.getElementById('weeklyBudgetInput').value;
+            const yInput = document.getElementById('yearlyBudgetInput').value;
+
+            const q = qInput === '' ? null : parseFloat(qInput);
+            const w = wInput === '' ? null : parseFloat(wInput);
+            const y = yInput === '' ? null : parseFloat(yInput);
+
+            const computed = computeBudgetValues({ quarterly: q, weekly: w, yearly: y });
+            if (!computed) {
+                alert('Please enter at least one non-negative number to save.');
+                return;
+            }
+
+            try {
+                await updateDoc(doc(db, "data", budgetData.id), {
+                    quarterlyBudget: computed.quarterly,
+                    weeklyBudget: computed.weekly,
+                    yearlyBudget: computed.yearly
+                });
+
+                // Update local copy and refresh the hours UI
+                budgetData.quarterlyBudget = computed.quarterly;
+                budgetData.weeklyBudget = computed.weekly;
+                budgetData.yearlyBudget = computed.yearly;
+                renderHours();
+
+                alert('Hour budgets updated successfully!');
+                document.getElementById('editBudgetDialog').close();
+            } catch (error) {
+                console.error('Error updating hour budget:', error);
+                alert('Error updating hour budget: ' + error.message);
+            }
+        });
+    }
+
+    // Wire the dialog header close button
+    const budgetDialog = document.getElementById('editBudgetDialog');
+    if (budgetDialog) {
+        const dialogClose = budgetDialog.querySelector('button[aria-label="Close"]');
+        if (dialogClose) {
+            dialogClose.addEventListener('click', () => {
+                budgetDialog.close();
+            });
+        }
+    }
+}
+
+// Compute missing budget values. Assumptions: 4 quarters/year, 52 weeks/year (=> 13 weeks/quarter)
+function computeBudgetValues({ quarterly, weekly, yearly }) {
+    const WEEKS_PER_YEAR = 52;
+    const QUARTERS_PER_YEAR = 4;
+    const WEEKS_PER_QUARTER = WEEKS_PER_YEAR / QUARTERS_PER_YEAR; // 13
+
+    // Normalize invalid entries to null
+    quarterly = (typeof quarterly === 'number' && !isNaN(quarterly) && quarterly >= 0) ? quarterly : null;
+    weekly = (typeof weekly === 'number' && !isNaN(weekly) && weekly >= 0) ? weekly : null;
+    yearly = (typeof yearly === 'number' && !isNaN(yearly) && yearly >= 0) ? yearly : null;
+
+    // Need at least one value
+    if (quarterly === null && weekly === null && yearly === null) return null;
+
+    // If all three provided, return rounded integers
+    if (quarterly !== null && weekly !== null && yearly !== null) {
+        return {
+            quarterly: Math.round(quarterly),
+            weekly: Math.round(weekly),
+            yearly: Math.round(yearly)
+        };
+    }
+
+    // Two provided -> compute the third using consistent relations
+    if (quarterly !== null && weekly !== null) {
+        const computedYearly = Math.round(quarterly * QUARTERS_PER_YEAR);
+        return { quarterly: Math.round(quarterly), weekly: Math.round(weekly), yearly: computedYearly };
+    }
+    if (quarterly !== null && yearly !== null) {
+        const computedWeekly = Math.round(yearly / WEEKS_PER_YEAR);
+        return { quarterly: Math.round(quarterly), weekly: computedWeekly, yearly: Math.round(yearly) };
+    }
+    if (weekly !== null && yearly !== null) {
+        const computedQuarterly = Math.round(yearly / QUARTERS_PER_YEAR);
+        return { quarterly: computedQuarterly, weekly: Math.round(weekly), yearly: Math.round(yearly) };
+    }
+
+    // Only one provided -> compute others using assumptions
+    if (quarterly !== null) {
+        const computedYearly = Math.round(quarterly * QUARTERS_PER_YEAR);
+        const computedWeekly = Math.round(computedYearly / WEEKS_PER_YEAR);
+        return { quarterly: Math.round(quarterly), weekly: computedWeekly, yearly: computedYearly };
+    }
+    if (weekly !== null) {
+        const computedYearly = Math.round(weekly * WEEKS_PER_YEAR);
+        const computedQuarterly = Math.round(computedYearly / QUARTERS_PER_YEAR);
+        return { quarterly: computedQuarterly, weekly: Math.round(weekly), yearly: computedYearly };
+    }
+    if (yearly !== null) {
+        const computedQuarterly = Math.round(yearly / QUARTERS_PER_YEAR);
+        const computedWeekly = Math.round(yearly / WEEKS_PER_YEAR);
+        return { quarterly: computedQuarterly, weekly: computedWeekly, yearly: Math.round(yearly) };
+    }
+
+    return null;
 }

@@ -185,7 +185,7 @@
 
         <!-- Tab content panels -->
         <div id="overview" class="tab-content active">
-            <h2>Overview</h2>
+            <h2>Overview <a id="editBudget" href="#"><i class="fa-solid fa-edit"></i></a></h2>
 
             <div class="progress-row" id="weeklySection">
                 <div class="progress-text">
@@ -472,6 +472,40 @@
                     <div style="text-align: right;"><button id="saveTaskBtn"><i class="fa-solid fa-save"></i> Save Task</button></div>
                 </div>
             </div>
+        </article>
+    </dialog>
+    <dialog id="editBudgetDialog">
+        <article>
+            <header>
+                <button aria-label="Close" rel="prev"></button>
+                <p>
+                    <strong>Edit Hour Budget</strong>
+                </p>
+            </header>
+            <h5>Set hours budget (Quarterly, Weekly, Yearly):</h5>
+            <div style="display: flex; gap: 10px; align-items: center; flex-wrap: wrap;">
+                <div style="display:flex;align-items:center;gap:6px;">
+                    <label for="quarterlyBudgetInput"><strong>Quarterly:</strong></label><br>
+                    <input type="number" id="quarterlyBudgetInput" value="0" min="0" style="width: 140px;">
+                    <button type="button" class="clear-budget-btn" data-target="quarterlyBudgetInput" aria-label="Clear quarterly" style="font-size:1.1rem;padding:2px 8px;">×</button>
+                </div>
+                <div style="display:flex;align-items:center;gap:6px;">
+                    <label for="weeklyBudgetInput"><strong>Weekly:</strong></label><br>
+                    <input type="number" id="weeklyBudgetInput" value="0" min="0" style="width: 120px;">
+                    <button type="button" class="clear-budget-btn" data-target="weeklyBudgetInput" aria-label="Clear weekly" style="font-size:1.1rem;padding:2px 8px;">×</button>
+                </div>
+                <div style="display:flex;align-items:center;gap:6px;">
+                    <label for="yearlyBudgetInput"><strong>Yearly:</strong></label><br>
+                    <input type="number" id="yearlyBudgetInput" value="0" min="0" style="width: 140px;">
+                    <button type="button" class="clear-budget-btn" data-target="yearlyBudgetInput" aria-label="Clear yearly" style="font-size:1.1rem;padding:2px 8px;">×</button>
+                </div>
+                <div style="margin-left: auto;">
+                    <button id="autofillBudgetBtn" title="Auto-calculate missing values"><i class="fa-solid fa-magic"></i> Autofill</button>
+                </div>
+            </div>
+            <small>*Values will be kept consistent: Year = Quarterly × 4, Week = Year ÷ 52 (uses 52 weeks/year).</small>
+            <hr>
+            <div style="text-align: right;"><button id="saveHourBudgetBtn"><i class="fa-solid fa-save"></i> Save</button></div>
         </article>
     </dialog>
 
