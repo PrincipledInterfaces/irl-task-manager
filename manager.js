@@ -2,6 +2,7 @@ import { auth, db } from './firebase-config.js';
 import { onAuthStateChanged, signOut } from "https://www.gstatic.com/firebasejs/12.6.0/firebase-auth.js";
 import { collection, getDocs, doc, getDoc, updateDoc, arrayUnion, arrayRemove, addDoc, deleteDoc, Timestamp } from "https://www.gstatic.com/firebasejs/12.6.0/firebase-firestore.js";
 import { getPageUrl, getApiUrl } from './utils.js';
+import { getScheduledWeek, getScheduledQuarter, getScheduledYear } from './wheniwork.js';
 
 let currentUser = null;
 let allUsers = [];
@@ -90,7 +91,7 @@ onAuthStateChanged(auth, async (user) => {
             setupEditBudgetButton();
 
             // Render hours
-            renderHours();
+            await renderHours();
         }
     } else {
         window.location.href = getPageUrl("signin");
@@ -648,7 +649,7 @@ function setupHoursCalculationSwitch() {
     const noteElement = document.getElementById('hoursCalculationNote');
 
     if (includeActiveSwitch) {
-        includeActiveSwitch.addEventListener('change', () => {
+        includeActiveSwitch.addEventListener('change', async () => {
             // Update note text
             if (includeActiveSwitch.checked) {
                 noteElement.textContent = 'Hour usage includes both completed and active tasks.';
@@ -657,12 +658,12 @@ function setupHoursCalculationSwitch() {
             }
 
             // Re-render hours with new calculation mode
-            renderHours();
+            await renderHours();
         });
     }
 }
 
-function renderHours() {
+async function renderHours() {
     console.log('======================================');
     console.log('[Render Hours] Starting hour calculation...');
     console.log('======================================');
@@ -686,6 +687,14 @@ function renderHours() {
     var totalHoursYear = 0;
     var totalHoursQuarter = 0;
     var totalHoursWeek = 0;
+
+    // Fetch WhenIWork hours
+    console.log('[Render Hours] Fetching WhenIWork scheduled hours...');
+    const whenIWorkWeek = await getScheduledWeek().catch(err => { console.error('[WhenIWork Week]', err); return 0; });
+    const whenIWorkQuarter = await getScheduledQuarter().catch(err => { console.error('[WhenIWork Quarter]', err); return 0; });
+    const whenIWorkYear = await getScheduledYear().catch(err => { console.error('[WhenIWork Year]', err); return 0; });
+
+    console.log(`[Render Hours] WhenIWork hours - Week: ${whenIWorkWeek}, Quarter: ${whenIWorkQuarter}, Year: ${whenIWorkYear}`);
 
     var tasksCountedYear = 0;
     var tasksCountedQuarter = 0;
@@ -747,11 +756,16 @@ function renderHours() {
         }
     });
 
+    // Add WhenIWork hours to totals
+    totalHoursWeek += whenIWorkWeek;
+    totalHoursQuarter += whenIWorkQuarter;
+    totalHoursYear += whenIWorkYear;
+
     console.log('======================================');
-    console.log('[Render Hours] Final totals:');
-    console.log(`  Week: ${totalHoursWeek} hours from ${tasksCountedWeek} tasks (budget: ${budgetData.weeklyBudget})`);
-    console.log(`  Quarter: ${totalHoursQuarter} hours from ${tasksCountedQuarter} tasks (budget: ${budgetData.quarterlyBudget})`);
-    console.log(`  Year: ${totalHoursYear} hours from ${tasksCountedYear} tasks (budget: ${budgetData.yearlyBudget})`);
+    console.log('[Render Hours] Final totals (including WhenIWork):');
+    console.log(`  Week: ${totalHoursWeek} hours (${tasksCountedWeek} tasks + ${whenIWorkWeek} WhenIWork hrs) (budget: ${budgetData.weeklyBudget})`);
+    console.log(`  Quarter: ${totalHoursQuarter} hours (${tasksCountedQuarter} tasks + ${whenIWorkQuarter} WhenIWork hrs) (budget: ${budgetData.quarterlyBudget})`);
+    console.log(`  Year: ${totalHoursYear} hours (${tasksCountedYear} tasks + ${whenIWorkYear} WhenIWork hrs) (budget: ${budgetData.yearlyBudget})`);
     console.log('======================================');
 
     // Update circular progress bars
@@ -1778,7 +1792,7 @@ function setupEditBudgetButton() {
                 budgetData.quarterlyBudget = computed.quarterly;
                 budgetData.weeklyBudget = computed.weekly;
                 budgetData.yearlyBudget = computed.yearly;
-                renderHours();
+                await renderHours();
 
                 alert('Hour budgets updated successfully!');
                 document.getElementById('editBudgetDialog').close();
