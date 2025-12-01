@@ -80,7 +80,7 @@ async function login() {
     const loginData = await loginResponse.json();
     console.log('[WhenIWork] Login response:', loginData);
     token = loginData.token;
-    userId = loginData.user ? loginData.user.id : loginData.users?.[0]?.id;
+    userId = loginData.person?.id || loginData.user?.id || loginData.users?.[0]?.id;
 
     console.log('[WhenIWork] Login successful, userId:', userId);
     return { token, userId };
