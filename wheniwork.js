@@ -190,10 +190,17 @@ async function initialize() {
       user.shifts = [];
     });
 
-    // Group shifts by user ID
+    // Group shifts by user ID and calculate hours
     shiftsArray.forEach(shift => {
       const user = users.find(u => u.id === shift.user_id);
       if (user) {
+        // Calculate hours from start_time and end_time
+        const start = new Date(shift.start_time);
+        const end = new Date(shift.end_time);
+        const totalHours = (end - start) / (1000 * 60 * 60); // Convert ms to hours
+        const breakHours = shift.break_time || 0;
+        shift.hours = totalHours - breakHours; // Subtract unpaid breaks
+
         user.shifts.push(shift);
       }
     });
