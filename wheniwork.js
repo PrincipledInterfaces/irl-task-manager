@@ -93,24 +93,27 @@ async function login() {
 // Get all users
 async function getAllUsers() {
   try {
+    console.log('[WhenIWork] Fetching users with token:', token ? 'present' : 'missing', 'userId:', userId);
     const usersResponse = await fetch('https://api.wheniwork.com/2/users', {
       headers: {
         'Authorization': `Bearer ${token}`,
-        'W-UserId': userId
+        'W-UserId': String(userId)
       }
     });
 
     if (!usersResponse.ok) {
+      const errorText = await usersResponse.text();
+      console.error('[WhenIWork] Users API error:', usersResponse.status, errorText);
       throw new Error(`Failed to fetch users: ${usersResponse.status}`);
     }
 
     const usersData = await usersResponse.json();
     users = usersData.users || [];
-    
-    console.log(`Fetched ${users.length} users`);
+
+    console.log(`[WhenIWork] Fetched ${users.length} users`);
     return users;
   } catch (error) {
-    console.error('Error fetching users:', error);
+    console.error('[WhenIWork] Error fetching users:', error);
     throw error;
   }
 }
