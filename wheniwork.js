@@ -96,8 +96,7 @@ async function getAllUsers() {
     console.log('[WhenIWork] Fetching users with token:', token ? 'present' : 'missing', 'userId:', userId);
     const usersResponse = await fetch('https://api.wheniwork.com/2/users', {
       headers: {
-        'Authorization': `Bearer ${token}`,
-        'W-UserId': String(userId)
+        'W-Token': token
       }
     });
 
@@ -129,8 +128,7 @@ async function getShifts(startDate, endDate) {
 
     const shiftsResponse = await fetch(`${shiftsUrl}?${params}`, {
       headers: {
-        'Authorization': `Bearer ${token}`,
-        'W-UserId': userId
+        'W-Token': token
       }
     });
 
