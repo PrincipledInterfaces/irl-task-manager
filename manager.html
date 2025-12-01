@@ -187,6 +187,11 @@
         <div id="overview" class="tab-content active">
             <h2>Overview <a id="editBudget" href="#"><i class="fa-solid fa-edit"></i></a></h2>
 
+            <div id="overviewLoader" style="display:flex;justify-content:center;align-items:center;min-height:150px;">
+                <div class="loader"></div>
+            </div>
+
+            <div id="overviewContent" style="display:none;">
             <div class="progress-row" id="weeklySection">
                 <div class="progress-text">
                     <h4 id="weeklyUsage">0 out of 0 hours this week</h4>
@@ -241,6 +246,7 @@
                 </label>
                 <p style="color: var(--pico-muted-color); font-size: 0.9rem; margin-top: 0.5rem;">When enabled, all active tasks count toward hour totals, not just completed ones. Use this to forecast total hours if all current tasks are completed.</p>
             </article>
+            </div>
         </div>
 
         <div id="tasks" class="tab-content">

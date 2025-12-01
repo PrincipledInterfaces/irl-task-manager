@@ -773,6 +773,12 @@ async function renderHours() {
     updateCircularProgress('quarterly', totalHoursQuarter, budgetData.quarterlyBudget, 'this quarter');
     updateCircularProgress('yearly', totalHoursYear, budgetData.yearlyBudget, 'this year');
 
+    // Hide loader and show content
+    const loader = document.getElementById('overviewLoader');
+    const content = document.getElementById('overviewContent');
+    if (loader) loader.style.display = 'none';
+    if (content) content.style.display = 'block';
+
     console.log('[Render Hours] UI updated successfully');
 }
 
