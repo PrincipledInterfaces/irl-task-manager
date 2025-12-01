@@ -78,10 +78,11 @@ async function login() {
     }
 
     const loginData = await loginResponse.json();
+    console.log('[WhenIWork] Login response:', loginData);
     token = loginData.token;
-    userId = loginData.user.id;
-    
-    console.log('Login successful');
+    userId = loginData.user ? loginData.user.id : loginData.users?.[0]?.id;
+
+    console.log('[WhenIWork] Login successful, userId:', userId);
     return { token, userId };
   } catch (error) {
     console.error('Login error:', error);
@@ -248,7 +249,7 @@ async function getScheduledQuarter() {
     let quarterDates = null;
     try {
         console.log('[getScheduledQuarter] Loading DePaul academic quarter dates...');
-        const response = await fetch('/api/quarter-dates');
+        const response = await fetch(getApiUrl('quarter-dates'));
 
         if (!response.ok) {
             throw new Error(`Failed to fetch quarter dates: ${response.statusText}`);
@@ -331,7 +332,7 @@ async function getScheduledYear() {
     let quarterDates = null;
     try {
         console.log('[getScheduledYear] Loading DePaul academic quarter dates...');
-        const response = await fetch('/api/quarter-dates');
+        const response = await fetch(getApiUrl('quarter-dates'));
 
         if (!response.ok) {
             throw new Error(`Failed to fetch quarter dates: ${response.statusText}`);
