@@ -652,9 +652,9 @@ function setupHoursCalculationSwitch() {
         includeActiveSwitch.addEventListener('change', async () => {
             // Update note text
             if (includeActiveSwitch.checked) {
-                noteElement.textContent = 'Hour usage includes both completed and active tasks.';
+                noteElement.textContent = 'Hour usage includes both completed and active tasks, as well as shifts scheduled in WhenIWork.';
             } else {
-                noteElement.textContent = "Hour usage is based on tasks marked as 'complete'.";
+                noteElement.textContent = "Hour usage is based on tasks marked as 'complete' and shifts scheduled in WhenIWork.";
             }
 
             // Re-render hours with new calculation mode
