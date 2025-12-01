@@ -2,7 +2,7 @@ import { auth, db } from './firebase-config.js';
 import { onAuthStateChanged, signOut } from "https://www.gstatic.com/firebasejs/12.6.0/firebase-auth.js";
 import { collection, getDocs, doc, getDoc, updateDoc, arrayUnion, arrayRemove, addDoc, deleteDoc, Timestamp } from "https://www.gstatic.com/firebasejs/12.6.0/firebase-firestore.js";
 import { getPageUrl, getApiUrl } from './utils.js';
-import { getScheduledWeek, getScheduledQuarter, getScheduledYear } from './wheniwork.js';
+import { initialize as initializeWhenIWork, getScheduledWeek, getScheduledQuarter, getScheduledYear } from './wheniwork.js';
 
 let currentUser = null;
 let allUsers = [];
@@ -688,7 +688,11 @@ async function renderHours() {
     var totalHoursQuarter = 0;
     var totalHoursWeek = 0;
 
-    // Fetch WhenIWork hours
+    // Initialize WhenIWork once (login + get users)
+    console.log('[Render Hours] Initializing WhenIWork...');
+    await initializeWhenIWork().catch(err => { console.error('[WhenIWork Init]', err); });
+
+    // Fetch WhenIWork hours (now all three calls will use the same authenticated session)
     console.log('[Render Hours] Fetching WhenIWork scheduled hours...');
     const whenIWorkWeek = await getScheduledWeek().catch(err => { console.error('[WhenIWork Week]', err); return 0; });
     const whenIWorkQuarter = await getScheduledQuarter().catch(err => { console.error('[WhenIWork Quarter]', err); return 0; });

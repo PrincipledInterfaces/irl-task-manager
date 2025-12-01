@@ -168,6 +168,34 @@ async function initialize() {
     await loadCredentials();
     await login();
     await getAllUsers();
+
+    // Fetch shifts for a wide date range (academic year)
+    const now = new Date();
+    const startDate = new Date(now.getFullYear(), 7, 1); // Aug 1 this year
+    const endDate = new Date(now.getFullYear() + 1, 7, 31); // July 31 next year
+
+    const shiftsData = await getShifts(
+      startDate.toISOString().split('T')[0],
+      endDate.toISOString().split('T')[0]
+    );
+
+    // Associate shifts with users
+    const shiftsArray = shiftsData.shifts || [];
+    console.log(`[WhenIWork] Associating ${shiftsArray.length} shifts with ${users.length} users`);
+
+    // Initialize shifts array for each user
+    users.forEach(user => {
+      user.shifts = [];
+    });
+
+    // Group shifts by user ID
+    shiftsArray.forEach(shift => {
+      const user = users.find(u => u.id === shift.user_id);
+      if (user) {
+        user.shifts.push(shift);
+      }
+    });
+
     console.log('[WhenIWork] Initialization complete');
   } catch (error) {
     console.error('[WhenIWork] Initialization failed:', error);
@@ -178,11 +206,15 @@ async function initialize() {
 export { loadCredentials, initialize, login, getAllUsers, getUser, getShifts, getScheduledWeek, getScheduledQuarter, getScheduledYear };
 
 async function getScheduledWeek() {
-    await login();
+    if (!token) {
+        await login();
+        await getAllUsers();
+    }
     const now = new Date();
-    hoursToAdd = 0;
+    let hoursToAdd = 0;
     for (var i = 0; i < users.length; i++) {
         const user = users[i];
+        if (!user.shifts || user.shifts.length === 0) continue;
         for (var j = 0; j < user.shifts.length; j++) {
             const shift = user.shifts[j];
             const shiftDate = new Date(shift.start_time);
@@ -208,7 +240,10 @@ async function getScheduledWeek() {
 }
 
 async function getScheduledQuarter() {
-    await login();
+    if (!token) {
+        await login();
+        await getAllUsers();
+    }
     // Fetch quarter dates (same as loadQuarterDates in manager.js)
     let quarterDates = null;
     try {
@@ -272,6 +307,7 @@ async function getScheduledQuarter() {
     // Iterate through users and shifts
     for (var i = 0; i < users.length; i++) {
         const user = users[i];
+        if (!user.shifts || user.shifts.length === 0) continue;
         for (var j = 0; j < user.shifts.length; j++) {
             const shift = user.shifts[j];
             const shiftDate = new Date(shift.start_time);
@@ -287,7 +323,10 @@ async function getScheduledQuarter() {
 }
 
 async function getScheduledYear() {
-    await login();
+    if (!token) {
+        await login();
+        await getAllUsers();
+    }
     // Fetch quarter dates (same as loadQuarterDates in manager.js)
     let quarterDates = null;
     try {
@@ -328,6 +367,7 @@ async function getScheduledYear() {
     // Iterate through users and shifts
     for (var i = 0; i < users.length; i++) {
         const user = users[i];
+        if (!user.shifts || user.shifts.length === 0) continue;
         for (var j = 0; j < user.shifts.length; j++) {
             const shift = user.shifts[j];
             const shiftDate = new Date(shift.start_time);
