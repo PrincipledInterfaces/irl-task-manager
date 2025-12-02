@@ -91,24 +91,30 @@
             </div>
         </div>
         <br>
-        <h5 id="nameText">Hello, you have the following tasks...</h5>
 
         <!-- Weekly Hours Progress -->
-        <div class="progress-row" id="weeklySection">
-            <div class="progress-text">
-                <h4 id="weeklyUsage">0 out of 0 hours this week</h4>
-                <p id="weeklyRemaining">0 hours remaining</p>
+        <article>
+            <div class="progress-row" id="weeklySection">
+                <div class="progress-text">
+                    <h4 id="weeklyUsage">0 out of 0 hours this week <em data-tooltip="Including scheduled shifts in WhenIWork as well as tasks marked as complete."><i class="fa-solid fa-info-circle"></i></em></h4>
+                    <p id="weeklyRemaining">0 hours remaining</p>
+                </div>
+                <div class="circular-progress">
+                    <svg viewBox="0 0 120 120">
+                        <circle class="bg-circle" cx="60" cy="60" r="54"></circle>
+                        <circle class="progress-circle" id="weeklyCircle" cx="60" cy="60" r="54"
+                                stroke-dasharray="339.292" stroke-dashoffset="339.292"></circle>
+                    </svg>
+                    <div class="percentage" id="weeklyPercent">0%</div>
+                </div>
+                
             </div>
-            <div class="circular-progress">
-                <svg viewBox="0 0 120 120">
-                    <circle class="bg-circle" cx="60" cy="60" r="54"></circle>
-                    <circle class="progress-circle" id="weeklyCircle" cx="60" cy="60" r="54"
-                            stroke-dasharray="339.292" stroke-dashoffset="339.292"></circle>
-                </svg>
-                <div class="percentage" id="weeklyPercent">0%</div>
-            </div>
-        </div>
-
+            <details style="margin-left: 1rem;">
+                <summary>Details</summary>
+                <p id="weeklyDetails">This shows your worked hours this week ().</p>
+            </details>
+        </article>
+        <h5 id="nameText">Hello, you have the following tasks...</h5>
         <div id="user-tasks">
             <!-- Job listings will be rendered here by staff.js oh yeah-->
             <div style="display:flex;justify-content:center;align-items:center;min-height:150px;">

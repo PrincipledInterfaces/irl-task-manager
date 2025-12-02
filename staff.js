@@ -6,6 +6,10 @@ import { getPageUrl } from './utils.js';
 let currentUser = null;
 let tasksData = [];
 
+// Initialize WhenIWork once (login + get users)
+console.log('[Render Hours] Initializing WhenIWork...');
+await initializeWhenIWork().catch(err => { console.error('[WhenIWork Init]', err); });
+
 // Check auth state and redirect if not logged in
 onAuthStateChanged(auth, async (user) => {
     if (user) {
@@ -129,6 +133,30 @@ function renderWeeklyHours() {
         task.assignedTo && task.assignedTo.includes(currentUser.id)
     );
     console.log(`Tasks assigned to current user: ${userAssignedTasks.length}`, userAssignedTasks);
+
+    // get hours from wheniwork shifts
+    whenIWorkHours = 0;
+    wiwUser = getUser(currentUser.fullName.toLowerCase())[0];
+    if (wiwUser) {
+        whenIWorkHours = 0;
+        for (const shift of wiwUser.shifts) {
+            const shiftStart = new Date(shift.start_time);
+            if (isDateInCurrentWeek(shiftStart)) {
+                const shiftEnd = new Date(shift.end_time);
+                const hours = (shiftEnd - shiftStart) / (1000 * 60 * 60); // convert ms to hours
+                whenIWorkHours += hours;
+                console.log(`  WhenIWork Shift: ${shiftStart.toLocaleString()} - ${shiftEnd.toLocaleString()} (${hours.toFixed(2)} hours)`);
+            }
+        }
+        console.log(`Total WhenIWork hours this week: ${whenIWorkHours.toFixed(2)}`);
+    } else {
+        console.log(`No WhenIWork user found for ${currentUser.fullName}`);
+    }
+
+    weeklyHours += whenIWorkHours;
+
+    // Now add completed tasks hours
+    console.log('Checking completed tasks for current user:');
 
     tasksData.forEach(task => {
         // Count if task is assigned to current user AND has been completed

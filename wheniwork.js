@@ -1,6 +1,7 @@
 // Import necessary modules
 import { auth } from './firebase-config.js';
 import { getApiUrl } from './utils.js';
+import { initialize as initializeWhenIWork, getScheduledWeek, getScheduledQuarter, getScheduledYear } from './wheniwork.js';
 
 // Configuration - will be loaded from server
 let CONFIG = {
