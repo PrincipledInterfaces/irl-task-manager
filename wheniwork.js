@@ -238,7 +238,7 @@ async function getScheduledWeek() {
             endOfWeek.setDate(startOfWeek.getDate() + 6);
             endOfWeek.setHours(23, 59, 59, 999);
 
-            if ((shiftDate >= startOfWeek && shiftDate <= endOfWeek) && shift.notes && !shift.notes.includes('(Created via IRL Task Manager')) {
+            if ((shiftDate >= startOfWeek && shiftDate <= endOfWeek) && (!shift.notes || !shift.notes.includes('(Created via IRL Task Manager'))) {
                 console.log(`User ${user.first_name} ${user.last_name} has a shift on ${shiftDate}`);
                 hoursToAdd += shift.hours;
             }
@@ -321,7 +321,7 @@ async function getScheduledQuarter() {
             const shift = user.shifts[j];
             const shiftDate = new Date(shift.start_time);
 
-            if ((shiftDate >= quarterStart && shiftDate < quarterEnd) && shift.notes && !shift.notes.includes('(Created via IRL Task Manager')) {
+            if ((shiftDate >= quarterStart && shiftDate < quarterEnd) && (!shift.notes || !shift.notes.includes('(Created via IRL Task Manager'))) {
                 console.log(`User ${user.first_name} ${user.last_name} has a shift on ${shiftDate}`);
                 hoursToAdd += shift.hours;
             }
@@ -381,7 +381,7 @@ async function getScheduledYear() {
             const shift = user.shifts[j];
             const shiftDate = new Date(shift.start_time);
 
-            if ((shiftDate >= academicYearStart && shiftDate < academicYearEnd) && shift.notes && !shift.notes.includes('(Created via IRL Task Manager')) {
+            if ((shiftDate >= academicYearStart && shiftDate < academicYearEnd) && (!shift.notes || !shift.notes.includes('(Created via IRL Task Manager'))) {
                 console.log(`User ${user.first_name} ${user.last_name} has a shift on ${shiftDate}`);
                 hoursToAdd += shift.hours;
             }

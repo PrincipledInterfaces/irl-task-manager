@@ -135,14 +135,15 @@ function renderWeeklyHours() {
     );
     console.log(`Tasks assigned to current user: ${userAssignedTasks.length}`, userAssignedTasks);
 
-    // get hours from wheniwork shifts
+    // get hours from wheniwork shifts (excluding task manager created shifts)
     let whenIWorkHours = 0;
     let wiwUser = getUser(currentUser.fullName.toLowerCase())[0];
     if (wiwUser) {
         whenIWorkHours = 0;
         for (const shift of wiwUser.shifts) {
             const shiftStart = new Date(shift.start_time);
-            if (isDateInCurrentWeek(shiftStart)) {
+            // Only count shifts in current week that are NOT task manager created
+            if (isDateInCurrentWeek(shiftStart) && (!shift.notes || !shift.notes.includes('(Created via IRL Task Manager'))) {
                 const shiftEnd = new Date(shift.end_time);
                 const hours = (shiftEnd - shiftStart) / (1000 * 60 * 60); // convert ms to hours
                 whenIWorkHours += hours;
