@@ -63,10 +63,10 @@ app.get('/api/wheniwork-credentials', async (req, res) => {
       return res.status(401).json({ error: 'Unauthorized - Invalid token' });
     }
 
-    // Check if user is a manager (only managers can access WhenIWork credentials)
+    // Check if user exists in database (any authenticated user can access WhenIWork credentials)
     const userDoc = await db.collection('users').doc(decodedToken.uid).get();
-    if (!userDoc.exists || userDoc.data().role !== 'manager') {
-      return res.status(403).json({ error: 'Permission denied - Only managers can access WhenIWork credentials' });
+    if (!userDoc.exists) {
+      return res.status(403).json({ error: 'Permission denied - User not found in database' });
     }
 
     // Return credentials from environment variables
