@@ -214,7 +214,7 @@ function updateCircularProgress(used, budget) {
     const isOverBudget = remaining < 0;
 
     // Update text
-    document.getElementById('weeklyUsage').textContent = `${used} out of ${budget} hours this week`;
+    document.getElementById('weeklyUsage').innerHTML = `${used} out of ${budget} hours this week <em data-tooltip="Including scheduled shifts in WhenIWork as well as tasks marked as complete."><i class="fa-solid fa-info-circle"></i></em>`;
 
     const remainingElement = document.getElementById('weeklyRemaining');
     remainingElement.textContent = `${Math.abs(remaining)} hours ${remaining >= 0 ? 'remaining' : 'over budget'}`;
