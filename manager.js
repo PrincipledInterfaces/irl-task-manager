@@ -1199,7 +1199,7 @@ function openTaskDialog(taskId) {
         document.getElementById('taskName').textContent = 'New Task';
         document.getElementById('taskPriority').checked = false;
         document.getElementById('taskCategory').value = 'other';
-        document.getElementById('taskDescription').textContent = '';
+        document.getElementById('taskDescription').textContent = 'Task Description goes here :)';
         document.getElementById('taskHours').value = 4;
         document.getElementById('taskApprentice').checked = false;
         document.getElementById('taskDueDate').value = '';
@@ -1338,7 +1338,9 @@ async function saveTask() {
         const title = document.getElementById('taskName').textContent.trim();
         const priority = document.getElementById('taskPriority').checked;
         const categoryValue = document.getElementById('taskCategory').value;
-        const description = document.getElementById('taskDescription').textContent.trim();
+        const descriptionRaw = document.getElementById('taskDescription').textContent.trim();
+        // If the description is still the placeholder text, save as empty string
+        const description = descriptionRaw === 'Task Description goes here :)' ? '' : descriptionRaw;
 
         // Capitalize category properly
         const categoryMap = {
@@ -1571,6 +1573,78 @@ async function saveTask() {
                 id: docRef.id,
                 ...taskData
             });
+
+            // Update assignedJobIds for all assigned users
+            const assignedUsers = taskData.assignedTo || [];
+            console.log('Updating assignedJobIds for newly created task:', assignedUsers);
+
+            // Initialize wiwShiftIDs object for new task
+            const wiwShiftIDs = {};
+
+            for (const userId of assignedUsers) {
+                try {
+                    // Update user's assignedJobIds
+                    await updateDoc(doc(db, "users", userId), {
+                        assignedJobIds: arrayUnion(docRef.id)
+                    });
+                    console.log(`✓ Added task ${docRef.id} to user ${userId}'s assignedJobIds`);
+
+                    // Update local user data
+                    const userIndex = allUsers.findIndex(u => u.id === userId);
+                    if (userIndex !== -1) {
+                        if (!allUsers[userIndex].assignedJobIds) {
+                            allUsers[userIndex].assignedJobIds = [];
+                        }
+                        if (!allUsers[userIndex].assignedJobIds.includes(docRef.id)) {
+                            allUsers[userIndex].assignedJobIds.push(docRef.id);
+                        }
+                    }
+
+                    // Create WhenIWork shift for assigned user
+                    try {
+                        const user = allUsers.find(u => u.id === userId);
+                        if (user && taskData.due) {
+                            const wiwUsers = getUser(user.fullName);
+                            if (wiwUsers && wiwUsers.length > 0) {
+                                const wiwUser = wiwUsers[0];
+                                const dueDate = taskData.due.toDate ? taskData.due.toDate() : new Date(taskData.due);
+                                const taskHours = taskData.hours || 0;
+                                const startTime = new Date(dueDate.getTime() - (taskHours * 60 * 60 * 1000));
+
+                                console.log(`Creating WhenIWork shift for ${user.fullName} (WIW ID: ${wiwUser.id})`);
+                                const wiwShiftID = await createWIWShift(
+                                    wiwUser.id,
+                                    startTime.toISOString(),
+                                    dueDate.toISOString(),
+                                    `Task: ${taskData.title}`,
+                                    taskData.description || 'No description provided.'
+                                );
+
+                                wiwShiftIDs[userId] = wiwShiftID;
+                                console.log(`✓ WhenIWork shift ${wiwShiftID} created for user ${userId}`);
+                            } else {
+                                console.warn(`WhenIWork user not found for ${user.fullName}`);
+                            }
+                        }
+                    } catch (wiwError) {
+                        console.error(`Error creating WhenIWork shift for user ${userId}:`, wiwError);
+                    }
+                } catch (error) {
+                    console.error(`Error updating assignedJobIds for user ${userId}:`, error);
+                }
+            }
+
+            // Update task with wiwShiftIDs if any were created
+            if (Object.keys(wiwShiftIDs).length > 0) {
+                try {
+                    await updateDoc(doc(db, "tasks", docRef.id), {
+                        wiwShiftIDs: wiwShiftIDs
+                    });
+                    console.log(`✓ Updated task ${docRef.id} with WIW shift IDs`);
+                } catch (error) {
+                    console.error(`Error updating task wiwShiftIDs:`, error);
+                }
+            }
 
             // Create apprentice task if requested
             if (apprenticeTask) {
