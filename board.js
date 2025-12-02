@@ -6,9 +6,7 @@ import { initialize as initializeWhenIWork, createWIWShift, deleteWIWShift, getU
 
 let currentUser = null;
 let tasksData = [];
-
-console.log('[Render Hours] Initializing WhenIWork...');
-await initializeWhenIWork().catch(err => { console.error('[WhenIWork Init]', err); });
+let whenIWorkInitialized = false;
 
 // Available skills from skills.txt
 const AVAILABLE_SKILLS = [
@@ -412,6 +410,13 @@ async function handleClaim(event) {
         if (assignedUsers.length >= workerSlots) {
             alert("All slots for this task are filled!");
             return;
+        }
+
+        // Initialize WhenIWork if not already done (lazy initialization)
+        if (!whenIWorkInitialized) {
+            console.log('[Board] Initializing WhenIWork...');
+            await initializeWhenIWork();
+            whenIWorkInitialized = true;
         }
 
         // Find WhenIWork user by name
