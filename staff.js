@@ -136,8 +136,8 @@ function renderWeeklyHours() {
     console.log(`Tasks assigned to current user: ${userAssignedTasks.length}`, userAssignedTasks);
 
     // get hours from wheniwork shifts
-    whenIWorkHours = 0;
-    wiwUser = getUser(currentUser.fullName.toLowerCase())[0];
+    let whenIWorkHours = 0;
+    let wiwUser = getUser(currentUser.fullName.toLowerCase())[0];
     if (wiwUser) {
         whenIWorkHours = 0;
         for (const shift of wiwUser.shifts) {
