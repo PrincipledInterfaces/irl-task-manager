@@ -1,10 +1,14 @@
 import { auth, db } from './firebase-config.js';
 import { onAuthStateChanged } from "https://www.gstatic.com/firebasejs/12.6.0/firebase-auth.js";
-import { collection, getDocs, doc, getDoc, updateDoc, arrayUnion } from "https://www.gstatic.com/firebasejs/12.6.0/firebase-firestore.js";
+import { collection, getDocs, doc, getDoc, updateDoc, arrayUnion, arrayRemove } from "https://www.gstatic.com/firebasejs/12.6.0/firebase-firestore.js";
 import { getPageUrl } from './utils.js';
+import { initialize as initializeWhenIWork, createWIWShift, deleteWIWShift, getUser } from './wheniwork.js';
 
 let currentUser = null;
 let tasksData = [];
+
+console.log('[Render Hours] Initializing WhenIWork...');
+await initializeWhenIWork().catch(err => { console.error('[WhenIWork Init]', err); });
 
 // Available skills from skills.txt
 const AVAILABLE_SKILLS = [
@@ -391,47 +395,83 @@ async function handleClaim(event) {
 
     try {
         const task = tasksData.find(t => t.id === taskId);
-        if (task && currentUser) {
-            const assignedUsers = task.assignedTo || [];
-            const workerSlots = task.workerSlots || 1;
-
-            // Check if user already assigned
-            if (assignedUsers.includes(currentUser.id)) {
-                alert("You are already assigned to this task!");
-                return;
-            }
-
-            // Check if slots available
-            if (assignedUsers.length >= workerSlots) {
-                alert("All slots for this task are filled!");
-                return;
-            }
-
-            // Update task in Firestore - add to arrays
-            await updateDoc(doc(db, "tasks", taskId), {
-                assignedTo: arrayUnion(currentUser.id),
-                assignedToNames: arrayUnion(currentUser.fullName)
-            });
-
-            // Update user's assignedJobIds in Firestore
-            await updateDoc(doc(db, "users", currentUser.id), {
-                assignedJobIds: arrayUnion(taskId)
-            });
-
-            // Update local data
-            if (!task.assignedTo) task.assignedTo = [];
-            if (!task.assignedToNames) task.assignedToNames = [];
-            task.assignedTo.push(currentUser.id);
-            task.assignedToNames.push(currentUser.fullName);
-
-            if (!currentUser.assignedJobIds) currentUser.assignedJobIds = [];
-            currentUser.assignedJobIds.push(taskId);
-
-            // Re-render the board to show updated state
-            renderBoard();
-
-            console.log(`Task ${taskId} claimed by ${currentUser.fullName}`);
+        if (!task || !currentUser) {
+            throw new Error("Task or user not found");
         }
+
+        const assignedUsers = task.assignedTo || [];
+        const workerSlots = task.workerSlots || 1;
+
+        // Check if user already assigned
+        if (assignedUsers.includes(currentUser.id)) {
+            alert("You are already assigned to this task!");
+            return;
+        }
+
+        // Check if slots available
+        if (assignedUsers.length >= workerSlots) {
+            alert("All slots for this task are filled!");
+            return;
+        }
+
+        // Find WhenIWork user by name
+        const wiwUsers = getUser(currentUser.fullName);
+        if (!wiwUsers || wiwUsers.length === 0) {
+            throw new Error(`WhenIWork user not found for ${currentUser.fullName}`);
+        }
+        const wiwUser = wiwUsers[0]; // Take first match
+
+        // Calculate shift start and end times
+        const dueDate = task.due.toDate ? task.due.toDate() : new Date(task.due);
+        const taskHours = task.hours || 0;
+        const startTime = new Date(dueDate.getTime() - (taskHours * 60 * 60 * 1000)); // Subtract hours in milliseconds
+
+        // Convert to ISO strings for WhenIWork API
+        const startTimeISO = startTime.toISOString();
+        const endTimeISO = dueDate.toISOString();
+
+        // Create WhenIWork shift for this user
+        console.log(`Creating WhenIWork shift for ${currentUser.fullName} (WIW ID: ${wiwUser.id})`);
+        const wiwShiftID = await createWIWShift(
+            wiwUser.id,
+            startTimeISO,
+            endTimeISO,
+            `Task: ${task.title}`,
+            task.description || 'No description provided.'
+        );
+
+        console.log(`WhenIWork shift created with ID: ${wiwShiftID}`);
+
+        // Initialize wiwShiftIDs object if it doesn't exist
+        const wiwShiftIDs = task.wiwShiftIDs || {};
+        wiwShiftIDs[currentUser.id] = wiwShiftID;
+
+        // Update task in Firestore - add to arrays and store shift ID
+        await updateDoc(doc(db, "tasks", taskId), {
+            assignedTo: arrayUnion(currentUser.id),
+            assignedToNames: arrayUnion(currentUser.fullName),
+            wiwShiftIDs: wiwShiftIDs
+        });
+
+        // Update user's assignedJobIds in Firestore
+        await updateDoc(doc(db, "users", currentUser.id), {
+            assignedJobIds: arrayUnion(taskId)
+        });
+
+        // Update local data
+        if (!task.assignedTo) task.assignedTo = [];
+        if (!task.assignedToNames) task.assignedToNames = [];
+        task.assignedTo.push(currentUser.id);
+        task.assignedToNames.push(currentUser.fullName);
+        task.wiwShiftIDs = wiwShiftIDs;
+
+        if (!currentUser.assignedJobIds) currentUser.assignedJobIds = [];
+        currentUser.assignedJobIds.push(taskId);
+
+        // Re-render the board to show updated state
+        renderBoard();
+
+        console.log(`Task ${taskId} claimed by ${currentUser.fullName} with WIW shift ${wiwShiftID}`);
     } catch (error) {
         console.error("Error claiming task:", error);
         alert("Error claiming task: " + error.message);

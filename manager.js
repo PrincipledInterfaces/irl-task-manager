@@ -2,7 +2,7 @@ import { auth, db } from './firebase-config.js';
 import { onAuthStateChanged, signOut } from "https://www.gstatic.com/firebasejs/12.6.0/firebase-auth.js";
 import { collection, getDocs, doc, getDoc, updateDoc, arrayUnion, arrayRemove, addDoc, deleteDoc, Timestamp } from "https://www.gstatic.com/firebasejs/12.6.0/firebase-firestore.js";
 import { getPageUrl, getApiUrl } from './utils.js';
-import { initialize as initializeWhenIWork, getScheduledWeek, getScheduledQuarter, getScheduledYear } from './wheniwork.js';
+import { initialize as initializeWhenIWork, getScheduledWeek, getScheduledQuarter, getScheduledYear, createWIWShift, deleteWIWShift, getUser } from './wheniwork.js';
 
 let currentUser = null;
 let allUsers = [];
@@ -526,10 +526,25 @@ async function removeUserFromTask(taskId) {
     }
 
     try {
-        // Update Firestore - remove user from assignedTo and assignedToNames arrays
+        // Delete WhenIWork shift for this user if it exists
+        const wiwShiftIDs = task.wiwShiftIDs || {};
+        const shiftId = wiwShiftIDs[selectedUser.id];
+        if (shiftId) {
+            try {
+                console.log(`Deleting WhenIWork shift ${shiftId} for user ${selectedUser.id}`);
+                await deleteWIWShift(shiftId);
+                delete wiwShiftIDs[selectedUser.id];
+                console.log(`✓ WhenIWork shift ${shiftId} deleted`);
+            } catch (wiwError) {
+                console.error(`Error deleting WhenIWork shift:`, wiwError);
+            }
+        }
+
+        // Update Firestore - remove user from assignedTo and assignedToNames arrays, update wiwShiftIDs
         await updateDoc(doc(db, "tasks", taskId), {
             assignedTo: arrayRemove(selectedUser.id),
-            assignedToNames: arrayRemove(selectedUser.fullName)
+            assignedToNames: arrayRemove(selectedUser.fullName),
+            wiwShiftIDs: wiwShiftIDs
         });
 
         // Update local data
@@ -541,6 +556,7 @@ async function removeUserFromTask(taskId) {
             if (allTasks[taskIndex].assignedToNames) {
                 allTasks[taskIndex].assignedToNames = allTasks[taskIndex].assignedToNames.filter(name => name !== selectedUser.fullName);
             }
+            allTasks[taskIndex].wiwShiftIDs = wiwShiftIDs;
         }
 
         // Re-open the dialog to refresh the task list
@@ -1110,7 +1126,10 @@ function openTaskDialog(taskId) {
         // Populate form
         document.getElementById('taskName').textContent = selectedTask.title || '';
         document.getElementById('taskPriority').checked = selectedTask.priority || false;
-        document.getElementById('taskDescription').textContent = selectedTask.description || 'Task Description goes here :)';
+        const descEl = document.getElementById('taskDescription');
+        const rawDesc = typeof selectedTask.description === 'string' ? selectedTask.description : '';
+        const hasContent = rawDesc.trim().length > 0;
+        descEl.textContent = hasContent ? rawDesc : 'Task Description goes here :)';
         document.getElementById('taskHours').value = selectedTask.hours || 0;
         document.getElementById('taskApprentice').checked = selectedTask.apprenticeTask || false;
         document.getElementById('taskNonflexible').checked = selectedTask.nonflexible || false;
@@ -1440,6 +1459,9 @@ async function saveTask() {
                 allTasks[taskIndex] = { ...allTasks[taskIndex], ...taskData };
             }
 
+            // Initialize wiwShiftIDs object if it doesn't exist
+            const wiwShiftIDs = originalTask ? (originalTask.wiwShiftIDs || {}) : {};
+
             // Add task to users who were newly assigned
             const usersToAdd = newAssignedUsers.filter(userId => !oldAssignedUsers.includes(userId));
             console.log('Users to add:', usersToAdd);
@@ -1459,6 +1481,36 @@ async function saveTask() {
                         if (!allUsers[userIndex].assignedJobIds.includes(selectedTask.id)) {
                             allUsers[userIndex].assignedJobIds.push(selectedTask.id);
                         }
+                    }
+
+                    // Create WhenIWork shift for newly assigned user
+                    try {
+                        const user = allUsers.find(u => u.id === userId);
+                        if (user && taskData.due) {
+                            const wiwUsers = getUser(user.fullName);
+                            if (wiwUsers && wiwUsers.length > 0) {
+                                const wiwUser = wiwUsers[0];
+                                const dueDate = taskData.due.toDate ? taskData.due.toDate() : new Date(taskData.due);
+                                const taskHours = taskData.hours || 0;
+                                const startTime = new Date(dueDate.getTime() - (taskHours * 60 * 60 * 1000));
+
+                                console.log(`Creating WhenIWork shift for ${user.fullName} (WIW ID: ${wiwUser.id})`);
+                                const wiwShiftID = await createWIWShift(
+                                    wiwUser.id,
+                                    startTime.toISOString(),
+                                    dueDate.toISOString(),
+                                    `Task: ${taskData.title}`,
+                                    taskData.description || 'No description provided.'
+                                );
+
+                                wiwShiftIDs[userId] = wiwShiftID;
+                                console.log(`✓ WhenIWork shift ${wiwShiftID} created for user ${userId}`);
+                            } else {
+                                console.warn(`WhenIWork user not found for ${user.fullName}`);
+                            }
+                        }
+                    } catch (wiwError) {
+                        console.error(`Error creating WhenIWork shift for user ${userId}:`, wiwError);
                     }
                 } catch (error) {
                     console.error(`Error updating assignedJobIds for user ${userId}:`, error);
@@ -1480,8 +1532,33 @@ async function saveTask() {
                     if (userIndex !== -1 && allUsers[userIndex].assignedJobIds) {
                         allUsers[userIndex].assignedJobIds = allUsers[userIndex].assignedJobIds.filter(id => id !== selectedTask.id);
                     }
+
+                    // Delete WhenIWork shift for unassigned user
+                    try {
+                        const shiftId = wiwShiftIDs[userId];
+                        if (shiftId) {
+                            console.log(`Deleting WhenIWork shift ${shiftId} for user ${userId}`);
+                            await deleteWIWShift(shiftId);
+                            delete wiwShiftIDs[userId];
+                            console.log(`✓ WhenIWork shift ${shiftId} deleted for user ${userId}`);
+                        }
+                    } catch (wiwError) {
+                        console.error(`Error deleting WhenIWork shift for user ${userId}:`, wiwError);
+                    }
                 } catch (error) {
                     console.error(`Error updating assignedJobIds for user ${userId}:`, error);
+                }
+            }
+
+            // Update task with wiwShiftIDs if there were any changes
+            if (usersToAdd.length > 0 || usersToRemove.length > 0) {
+                try {
+                    await updateDoc(doc(db, "tasks", selectedTask.id), {
+                        wiwShiftIDs: wiwShiftIDs
+                    });
+                    console.log(`✓ Updated task ${selectedTask.id} with WIW shift IDs`);
+                } catch (error) {
+                    console.error(`Error updating task wiwShiftIDs:`, error);
                 }
             }
         } else {
@@ -1545,6 +1622,25 @@ async function deleteTask() {
     }
 
     try {
+        // Delete all WhenIWork shifts associated with this task
+        const wiwShiftIDs = selectedTask.wiwShiftIDs || {};
+        const shiftIds = Object.values(wiwShiftIDs);
+
+        if (shiftIds.length > 0) {
+            console.log(`Deleting ${shiftIds.length} WhenIWork shift(s) for task "${selectedTask.title}"`);
+
+            for (const shiftId of shiftIds) {
+                try {
+                    await deleteWIWShift(shiftId);
+                    console.log(`✓ WhenIWork shift ${shiftId} deleted`);
+                } catch (wiwError) {
+                    console.error(`Error deleting WhenIWork shift ${shiftId}:`, wiwError);
+                    // Continue deleting other shifts even if one fails
+                }
+            }
+        }
+
+        // Delete the task from Firestore
         await deleteDoc(doc(db, "tasks", selectedTask.id));
         console.log('Task deleted:', selectedTask.id);
 

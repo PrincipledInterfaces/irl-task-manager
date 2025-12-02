@@ -238,7 +238,7 @@ async function getScheduledWeek() {
             endOfWeek.setDate(startOfWeek.getDate() + 6);
             endOfWeek.setHours(23, 59, 59, 999);
 
-            if (shiftDate >= startOfWeek && shiftDate <= endOfWeek) {
+            if ((shiftDate >= startOfWeek && shiftDate <= endOfWeek) && shift.notes && !shift.notes.includes('(Created via IRL Task Manager')) {
                 console.log(`User ${user.first_name} ${user.last_name} has a shift on ${shiftDate}`);
                 hoursToAdd += shift.hours;
             }
@@ -321,7 +321,7 @@ async function getScheduledQuarter() {
             const shift = user.shifts[j];
             const shiftDate = new Date(shift.start_time);
 
-            if (shiftDate >= quarterStart && shiftDate < quarterEnd) {
+            if ((shiftDate >= quarterStart && shiftDate < quarterEnd) && shift.notes && !shift.notes.includes('(Created via IRL Task Manager')) {
                 console.log(`User ${user.first_name} ${user.last_name} has a shift on ${shiftDate}`);
                 hoursToAdd += shift.hours;
             }
@@ -381,7 +381,7 @@ async function getScheduledYear() {
             const shift = user.shifts[j];
             const shiftDate = new Date(shift.start_time);
 
-            if (shiftDate >= academicYearStart && shiftDate < academicYearEnd) {
+            if ((shiftDate >= academicYearStart && shiftDate < academicYearEnd) && shift.notes && !shift.notes.includes('(Created via IRL Task Manager')) {
                 console.log(`User ${user.first_name} ${user.last_name} has a shift on ${shiftDate}`);
                 hoursToAdd += shift.hours;
             }
@@ -391,7 +391,67 @@ async function getScheduledYear() {
     return hoursToAdd;
 }
 
-// Usage example:
-// await initialize();
-// const foundUsers = getUser('john');
-// const shifts = await getShifts('2025-11-01', '2025-11-30');
+// Creates a WhenIWork shift with start/end times, wheniwork user, title, and description
+export async function createWIWShift(wheniworkUserId, startTime, endTime, title, description) {
+    try {
+        if (!token) {
+            await login();
+        }
+
+        const shiftData = {
+            shift: {
+                user_id: wheniworkUserId,
+                start_time: startTime,
+                end_time: endTime,
+                position: title,
+                notes: description + `This shift is for an IRL Task, and does not represent a scheduled IRL Shift. (Created via IRL Task Manager on ${new Date().toLocaleDateString()})`
+            }
+        };
+
+        const response = await fetch('https://api.wheniwork.com/2/shifts', {
+            method: 'POST',
+            headers: {
+                'W-Token': token,
+                'Content-Type': 'application/json'
+            },
+            body: JSON.stringify(shiftData)
+        });
+
+        if (!response.ok) {
+            throw new Error(`Failed to create shift: ${response.status}`);
+        }
+
+        const responseData = await response.json();
+        console.log(responseData);
+        return responseData.shift.id;
+    } catch (error) {
+        console.error('[WhenIWork] Error creating shift:', error);
+        throw error;
+    }
+}
+
+// Deletes a WhenIWork shift by ID
+export async function deleteWIWShift(shiftId) {
+    try {
+        if (!token) {
+            await login();
+        }
+
+        const response = await fetch(`https://api.wheniwork.com/2/shifts/${shiftId}`, {
+            method: 'DELETE',
+            headers: {
+                'W-Token': token
+            }
+        });
+
+        if (!response.ok) {
+            throw new Error(`Failed to delete shift: ${response.status}`);
+        }
+
+        console.log(`[WhenIWork] Shift ${shiftId} deleted successfully`);
+        return true;
+    } catch (error) {
+        console.error('[WhenIWork] Error deleting shift:', error);
+        throw error;
+    }
+}

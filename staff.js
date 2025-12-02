@@ -2,7 +2,7 @@ import { auth, db } from './firebase-config.js';
 import { onAuthStateChanged, signOut } from "https://www.gstatic.com/firebasejs/12.6.0/firebase-auth.js";
 import { collection, getDocs, doc, getDoc, updateDoc, arrayRemove, Timestamp } from "https://www.gstatic.com/firebasejs/12.6.0/firebase-firestore.js";
 import { getPageUrl } from './utils.js';
-import { initialize as initializeWhenIWork, getUser } from './wheniwork.js';
+import { initialize as initializeWhenIWork, getUser, deleteWIWShift } from './wheniwork.js';
 
 let currentUser = null;
 let tasksData = [];
@@ -408,10 +408,25 @@ async function handleUnclaim(event) {
                 return;
             }
 
-            // Update task in Firestore - remove from arrays
+            // Delete WhenIWork shift for this user if it exists
+            const wiwShiftIDs = task.wiwShiftIDs || {};
+            const shiftId = wiwShiftIDs[currentUser.id];
+            if (shiftId) {
+                try {
+                    console.log(`Deleting WhenIWork shift ${shiftId} for user ${currentUser.id}`);
+                    await deleteWIWShift(shiftId);
+                    delete wiwShiftIDs[currentUser.id];
+                    console.log(`✓ WhenIWork shift ${shiftId} deleted`);
+                } catch (wiwError) {
+                    console.error(`Error deleting WhenIWork shift:`, wiwError);
+                }
+            }
+
+            // Update task in Firestore - remove from arrays and update wiwShiftIDs
             await updateDoc(doc(db, "tasks", taskId), {
                 assignedTo: arrayRemove(currentUser.id),
-                assignedToNames: arrayRemove(currentUser.fullName)
+                assignedToNames: arrayRemove(currentUser.fullName),
+                wiwShiftIDs: wiwShiftIDs
             });
 
             // Update user's assignedJobIds in Firestore
@@ -432,6 +447,7 @@ async function handleUnclaim(event) {
                     task.assignedToNames.splice(nameIndex, 1);
                 }
             }
+            task.wiwShiftIDs = wiwShiftIDs;
 
             const index = currentUser.assignedJobIds.indexOf(taskId);
             if (index > -1) {
