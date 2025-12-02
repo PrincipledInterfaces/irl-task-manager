@@ -215,9 +215,10 @@ async function initialize() {
 export { loadCredentials, initialize, login, getAllUsers, getUser, getShifts, getScheduledWeek, getScheduledQuarter, getScheduledYear };
 
 async function getScheduledWeek() {
-    if (!token) {
-        await login();
-        await getAllUsers();
+    // Assumes initialize() has already been called
+    if (!token || !users || users.length === 0) {
+        console.error('[getScheduledWeek] WhenIWork not initialized! Call initialize() first.');
+        return 0;
     }
     const now = new Date();
     let hoursToAdd = 0;
@@ -249,9 +250,10 @@ async function getScheduledWeek() {
 }
 
 async function getScheduledQuarter() {
-    if (!token) {
-        await login();
-        await getAllUsers();
+    // Assumes initialize() has already been called
+    if (!token || !users || users.length === 0) {
+        console.error('[getScheduledQuarter] WhenIWork not initialized! Call initialize() first.');
+        return 0;
     }
     // Fetch quarter dates (same as loadQuarterDates in manager.js)
     let quarterDates = null;
@@ -332,9 +334,10 @@ async function getScheduledQuarter() {
 }
 
 async function getScheduledYear() {
-    if (!token) {
-        await login();
-        await getAllUsers();
+    // Assumes initialize() has already been called
+    if (!token || !users || users.length === 0) {
+        console.error('[getScheduledYear] WhenIWork not initialized! Call initialize() first.');
+        return 0;
     }
     // Fetch quarter dates (same as loadQuarterDates in manager.js)
     let quarterDates = null;
