@@ -7,10 +7,6 @@ import { initialize as initializeWhenIWork, getUser } from './wheniwork.js';
 let currentUser = null;
 let tasksData = [];
 
-// Initialize WhenIWork once (login + get users)
-console.log('[Render Hours] Initializing WhenIWork...');
-await initializeWhenIWork().catch(err => { console.error('[WhenIWork Init]', err); });
-
 // Check auth state and redirect if not logged in
 onAuthStateChanged(auth, async (user) => {
     if (user) {
@@ -26,6 +22,10 @@ onAuthStateChanged(auth, async (user) => {
             // Update greeting
             const nameText = document.getElementById('nameText');
             nameText.textContent = `Hello ${currentUser.fullName}!`;
+
+            // Initialize WhenIWork once (login + get users)
+            console.log('[Render Hours] Initializing WhenIWork...');
+            await initializeWhenIWork().catch(err => { console.error('[WhenIWork Init]', err); });
 
             // Load tasks and render board
             await loadTasks();
