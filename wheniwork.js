@@ -80,9 +80,13 @@ async function login() {
     const loginData = await loginResponse.json();
     console.log('[WhenIWork] Login response:', loginData);
     token = loginData.token;
-    userId = loginData.person?.id || loginData.user?.id || loginData.users?.[0]?.id;
+    const extractedUserId = loginData.person?.id || loginData.user?.id || loginData.users?.[0]?.id;
 
-    console.log('[WhenIWork] Login successful, userId:', userId);
+    // TODO: Figure out why login returns 23062051 but WhenIWork support says to use 48191255
+    // Hardcoding to Ben's manager account ID per WhenIWork support
+    userId = 48191255;
+
+    console.log('[WhenIWork] Login successful, extracted userId:', extractedUserId, 'using hardcoded:', userId);
     return { token, userId };
   } catch (error) {
     console.error('Login error:', error);
