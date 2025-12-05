@@ -461,10 +461,9 @@ export async function createWIWShift(wheniworkUserId, startTime, endTime, title,
             start_time: startTime,
             end_time: endTime,
             position_id: 0,
+            published: true,
             notes: description + ` This shift is for an IRL Task, and does not represent a scheduled IRL Shift. (Created via IRL Task Manager on ${new Date().toLocaleDateString()})`
         };
-
-        console.log('[WhenIWork] Creating shift with data:', JSON.stringify(shiftData, null, 2));
 
         const response = await fetch('https://api.wheniwork.com/2/shifts', {
             method: 'POST',
@@ -483,7 +482,6 @@ export async function createWIWShift(wheniworkUserId, startTime, endTime, title,
         }
 
         const responseData = await response.json();
-        console.log(responseData);
         return responseData.shift.id;
     } catch (error) {
         console.error('[WhenIWork] Error creating shift:', error);
