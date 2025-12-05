@@ -428,7 +428,9 @@ export async function createWIWShift(wheniworkUserId, startTime, endTime, title,
         });
 
         if (!response.ok) {
-            throw new Error(`Failed to create shift: ${response.status}`);
+            const errorBody = await response.text();
+            console.error('[WhenIWork] Shift creation failed:', response.status, errorBody);
+            throw new Error(`Failed to create shift: ${response.status} - ${errorBody}`);
         }
 
         const responseData = await response.json();
