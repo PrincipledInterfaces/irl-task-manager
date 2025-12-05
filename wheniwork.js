@@ -12,6 +12,8 @@ let CONFIG = {
 let token = null;
 let userId = null;
 let users = [];
+let locations = [];
+let defaultLocationId = null;
 let configLoaded = false;
 
 // Load credentials from server
@@ -122,6 +124,41 @@ async function getAllUsers() {
   }
 }
 
+// Get all locations
+async function getLocations() {
+  try {
+    console.log('[WhenIWork] Fetching locations...');
+    const locationsResponse = await fetch('https://api.wheniwork.com/2/locations', {
+      headers: {
+        'W-Token': token,
+        'W-UserId': userId.toString()
+      }
+    });
+
+    if (!locationsResponse.ok) {
+      const errorText = await locationsResponse.text();
+      console.error('[WhenIWork] Locations API error:', locationsResponse.status, errorText);
+      throw new Error(`Failed to fetch locations: ${locationsResponse.status}`);
+    }
+
+    const locationsData = await locationsResponse.json();
+    locations = locationsData.locations || [];
+
+    // Set default location to the first one
+    if (locations.length > 0) {
+      defaultLocationId = locations[0].id;
+      console.log(`[WhenIWork] Fetched ${locations.length} locations, using default: ${locations[0].name} (ID: ${defaultLocationId})`);
+    } else {
+      console.warn('[WhenIWork] No locations found!');
+    }
+
+    return locations;
+  } catch (error) {
+    console.error('[WhenIWork] Error fetching locations:', error);
+    throw error;
+  }
+}
+
 // Get shifts with date range
 async function getShifts(startDate, endDate) {
   try {
@@ -176,6 +213,7 @@ async function initialize() {
     await loadCredentials();
     await login();
     await getAllUsers();
+    await getLocations();
 
     // Fetch shifts for a wide date range (academic year)
     const now = new Date();
@@ -410,10 +448,11 @@ export async function createWIWShift(wheniworkUserId, startTime, endTime, title,
         const shiftData = {
             shift: {
                 user_id: wheniworkUserId,
+                location_id: defaultLocationId,
                 start_time: startTime,
                 end_time: endTime,
-                position: title,
-                notes: description + `This shift is for an IRL Task, and does not represent a scheduled IRL Shift. (Created via IRL Task Manager on ${new Date().toLocaleDateString()})`
+                position_id: 0, // 0 means "No Position"
+                notes: description + ` This shift is for an IRL Task, and does not represent a scheduled IRL Shift. (Created via IRL Task Manager on ${new Date().toLocaleDateString()})`
             }
         };
 
