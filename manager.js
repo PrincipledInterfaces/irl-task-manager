@@ -1640,6 +1640,13 @@ async function saveTask() {
                     await updateDoc(doc(db, "tasks", docRef.id), {
                         wiwShiftIDs: wiwShiftIDs
                     });
+
+                    // Update local allTasks with wiwShiftIDs
+                    const taskIndex = allTasks.findIndex(t => t.id === docRef.id);
+                    if (taskIndex !== -1) {
+                        allTasks[taskIndex].wiwShiftIDs = wiwShiftIDs;
+                    }
+
                     console.log(`✓ Updated task ${docRef.id} with WIW shift IDs`);
                 } catch (error) {
                     console.error(`Error updating task wiwShiftIDs:`, error);
