@@ -96,7 +96,8 @@ async function getAllUsers() {
     console.log('[WhenIWork] Fetching users with token:', token ? 'present' : 'missing', 'userId:', userId);
     const usersResponse = await fetch('https://api.wheniwork.com/2/users', {
       headers: {
-        'W-Token': token
+        'W-Token': token,
+        'W-UserId': userId.toString()
       }
     });
 
@@ -128,7 +129,8 @@ async function getShifts(startDate, endDate) {
 
     const shiftsResponse = await fetch(`${shiftsUrl}?${params}`, {
       headers: {
-        'W-Token': token
+        'W-Token': token,
+        'W-UserId': userId.toString()
       }
     });
 
@@ -415,6 +417,7 @@ export async function createWIWShift(wheniworkUserId, startTime, endTime, title,
             method: 'POST',
             headers: {
                 'W-Token': token,
+                'W-UserId': userId.toString(),
                 'Content-Type': 'application/json'
             },
             body: JSON.stringify(shiftData)
@@ -443,7 +446,8 @@ export async function deleteWIWShift(shiftId) {
         const response = await fetch(`https://api.wheniwork.com/2/shifts/${shiftId}`, {
             method: 'DELETE',
             headers: {
-                'W-Token': token
+                'W-Token': token,
+                'W-UserId': userId.toString()
             }
         });
 
