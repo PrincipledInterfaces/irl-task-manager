@@ -445,6 +445,16 @@ export async function createWIWShift(wheniworkUserId, startTime, endTime, title,
             await login();
         }
 
+        // Ensure locations are loaded
+        if (!defaultLocationId) {
+            console.log('[WhenIWork] Location not loaded, fetching locations...');
+            await getLocations();
+        }
+
+        if (!defaultLocationId) {
+            throw new Error('No WhenIWork location available - cannot create shift');
+        }
+
         const shiftData = {
             shift: {
                 user_id: wheniworkUserId,
