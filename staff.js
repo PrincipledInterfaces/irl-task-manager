@@ -2,7 +2,7 @@ import { auth, db } from './firebase-config.js';
 import { onAuthStateChanged, signOut } from "https://www.gstatic.com/firebasejs/12.6.0/firebase-auth.js";
 import { collection, getDocs, doc, getDoc, updateDoc, arrayRemove, Timestamp } from "https://www.gstatic.com/firebasejs/12.6.0/firebase-firestore.js";
 import { getPageUrl } from './utils.js';
-import { initialize as initializeWhenIWork, getUser, deleteWIWShift } from './wheniwork.js';
+import { initialize as initializeWhenIWork, getUserById, deleteWIWShift } from './wheniwork.js';
 
 let currentUser = null;
 let tasksData = [];
@@ -137,22 +137,27 @@ function renderWeeklyHours() {
 
     // get hours from wheniwork shifts (excluding task manager created shifts)
     let whenIWorkHours = 0;
-    let wiwUser = getUser(currentUser.fullName.toLowerCase())[0];
-    if (wiwUser) {
-        whenIWorkHours = 0;
-        for (const shift of wiwUser.shifts) {
-            const shiftStart = new Date(shift.start_time);
-            // Only count shifts in current week that are NOT task manager created
-            if (isDateInCurrentWeek(shiftStart) && (!shift.notes || !shift.notes.includes('(Created via IRL Task Manager'))) {
-                const shiftEnd = new Date(shift.end_time);
-                const hours = (shiftEnd - shiftStart) / (1000 * 60 * 60); // convert ms to hours
-                whenIWorkHours += hours;
-                console.log(`  WhenIWork Shift: ${shiftStart.toLocaleString()} - ${shiftEnd.toLocaleString()} (${hours.toFixed(2)} hours)`);
+    if (currentUser.wiwUserId) {
+        // Find user by wiwUserId in the WhenIWork users list
+        const wiwUser = getUserById(currentUser.wiwUserId);
+        if (wiwUser && wiwUser.shifts) {
+            whenIWorkHours = 0;
+            for (const shift of wiwUser.shifts) {
+                const shiftStart = new Date(shift.start_time);
+                // Only count shifts in current week that are NOT task manager created
+                if (isDateInCurrentWeek(shiftStart) && (!shift.notes || !shift.notes.includes('(Created via IRL Task Manager'))) {
+                    const shiftEnd = new Date(shift.end_time);
+                    const hours = (shiftEnd - shiftStart) / (1000 * 60 * 60); // convert ms to hours
+                    whenIWorkHours += hours;
+                    console.log(`  WhenIWork Shift: ${shiftStart.toLocaleString()} - ${shiftEnd.toLocaleString()} (${hours.toFixed(2)} hours)`);
+                }
             }
+            console.log(`Total WhenIWork hours this week: ${whenIWorkHours.toFixed(2)}`);
+        } else {
+            console.log(`No WhenIWork user found with ID ${currentUser.wiwUserId}`);
         }
-        console.log(`Total WhenIWork hours this week: ${whenIWorkHours.toFixed(2)}`);
     } else {
-        console.log(`No WhenIWork user found for ${currentUser.fullName}`);
+        console.log(`User ${currentUser.fullName} does not have a wiwUserId set`);
     }
 
     weeklyHours += whenIWorkHours;

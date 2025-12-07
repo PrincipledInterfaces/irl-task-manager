@@ -36,6 +36,10 @@
                 <input type="email" id="signupEmail" name="signupEmail" required><br><br>
                 <label for="signupPassword">Password:</label><br>
                 <input type="password" id="signupPassword" name="signupPassword" required><br><br>
+                <label for="wiwUserSearch">WhenIWork User:</label><br>
+                <input type="text" id="wiwUserSearch" name="wiwUserSearch" placeholder="Search by name..." required><br>
+                <div id="wiwSearchResults" style="max-height: 150px; overflow-y: auto; margin-top: 5px; display: none;"></div>
+                <input type="hidden" id="selectedWiwUserId" name="selectedWiwUserId"><br>
                 <button type="button" id="signupButton" disabled>Sign Up</button>
             </form>
             Already have an account? <a href="#" id="showLogin">Log In</a>

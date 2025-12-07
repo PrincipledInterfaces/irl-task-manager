@@ -2,13 +2,29 @@ import { createUserWithEmailAndPassword, signInWithEmailAndPassword, sendPasswor
 import { doc, setDoc, getDoc } from "https://www.gstatic.com/firebasejs/12.6.0/firebase-firestore.js";
 import { auth, db } from './firebase-config.js';
 import { getPageUrl } from './utils.js';
+import { initialize as initializeWhenIWork, getUser as searchWhenIWorkUser } from './wheniwork.js';
 
 document.getElementById("signup").hidden = true; //Hides signup form initially
 
+let wiwInitialized = false;
+let selectedWiwUser = null;
+
 //listner for showing signup form
-document.getElementById("showSignup").addEventListener("click", function() {
+document.getElementById("showSignup").addEventListener("click", async function() {
     document.getElementById("signup").hidden = false;
     document.getElementById("login").hidden = true;
+
+    // Initialize WhenIWork when signup is shown (for searching users)
+    if (!wiwInitialized) {
+        console.log('[Signup] Initializing WhenIWork for user search...');
+        try {
+            await initializeWhenIWork();
+            wiwInitialized = true;
+            console.log('[Signup] WhenIWork initialized');
+        } catch (error) {
+            console.error('[Signup] Failed to initialize WhenIWork:', error);
+        }
+    }
 });
 
 //listner for showing login form
@@ -35,6 +51,7 @@ document.getElementById("loginPassword").addEventListener("input", toggleLoginBu
 document.getElementById("signupEmail").addEventListener("input", toggleSignupButton);
 document.getElementById("signupPassword").addEventListener("input", toggleSignupButton);
 document.getElementById("signupFullName").addEventListener("input", toggleSignupButton);
+document.getElementById("wiwUserSearch").addEventListener("input", handleWiwSearch);
 
 function toggleLoginButton() {
     const email = document.getElementById("loginEmail").value;
@@ -46,7 +63,67 @@ function toggleSignupButton() {
     const email = document.getElementById("signupEmail").value;
     const password = document.getElementById("signupPassword").value;
     const fullName = document.getElementById("signupFullName").value;
-    signupButton.disabled = !(email && password && fullName);
+    const wiwUserId = document.getElementById("selectedWiwUserId").value;
+    signupButton.disabled = !(email && password && fullName && wiwUserId);
+}
+
+// Search WhenIWork users as user types
+async function handleWiwSearch() {
+    const searchQuery = document.getElementById("wiwUserSearch").value.trim();
+    const resultsDiv = document.getElementById("wiwSearchResults");
+
+    if (!searchQuery) {
+        resultsDiv.style.display = 'none';
+        resultsDiv.innerHTML = '';
+        return;
+    }
+
+    if (!wiwInitialized) {
+        resultsDiv.innerHTML = '<p style="padding: 5px;">Initializing...</p>';
+        resultsDiv.style.display = 'block';
+        return;
+    }
+
+    try {
+        const results = searchWhenIWorkUser(searchQuery);
+
+        if (!results || results.length === 0) {
+            resultsDiv.innerHTML = '<p style="padding: 5px; color: #888;">No users found</p>';
+            resultsDiv.style.display = 'block';
+            return;
+        }
+
+        resultsDiv.innerHTML = results.map(user =>
+            `<div class="wiw-result" data-user-id="${user.id}" data-user-name="${user.first_name} ${user.last_name}" style="padding: 8px; cursor: pointer; border-bottom: 1px solid #eee;">
+                ${user.first_name} ${user.last_name} (${user.email || 'no email'})
+            </div>`
+        ).join('');
+
+        // Add click listeners to results
+        resultsDiv.querySelectorAll('.wiw-result').forEach(div => {
+            div.addEventListener('click', () => {
+                const userId = div.getAttribute('data-user-id');
+                const userName = div.getAttribute('data-user-name');
+                selectWiwUser(userId, userName);
+            });
+        });
+
+        resultsDiv.style.display = 'block';
+    } catch (error) {
+        console.error('[Signup] Error searching WhenIWork users:', error);
+        resultsDiv.innerHTML = '<p style="padding: 5px; color: red;">Error searching users</p>';
+        resultsDiv.style.display = 'block';
+    }
+}
+
+// Select a WhenIWork user from search results
+function selectWiwUser(userId, userName) {
+    selectedWiwUser = { id: userId, name: userName };
+    document.getElementById("selectedWiwUserId").value = userId;
+    document.getElementById("wiwUserSearch").value = userName;
+    document.getElementById("wiwSearchResults").style.display = 'none';
+    toggleSignupButton(); // Re-check if signup button should be enabled
+    console.log('[Signup] Selected WhenIWork user:', userName, 'ID:', userId);
 }
 
 //listener for login / signup button
@@ -63,11 +140,12 @@ signupButton.addEventListener("click", async function() {
     const email = document.getElementById("signupEmail").value;
     const password = document.getElementById("signupPassword").value;
     const fullName = document.getElementById("signupFullName").value;
-    console.log("Attempting signup with email:", email, "name:", fullName);
-    await createAccount(email, password, fullName);
+    const wiwUserId = document.getElementById("selectedWiwUserId").value;
+    console.log("Attempting signup with email:", email, "name:", fullName, "WIW ID:", wiwUserId);
+    await createAccount(email, password, fullName, wiwUserId);
 });
 
-async function createAccount(email, password, fullName) {
+async function createAccount(email, password, fullName, wiwUserId) {
     try {
         console.log("Step 1: Creating Firebase Auth account...");
         // STEP 1: Create auth account
@@ -82,9 +160,10 @@ async function createAccount(email, password, fullName) {
             fullName: fullName,
             role: "user",  // Default to user, managers set manually in Firebase Console
             assignedJobIds: [],
-            allowedHours: 25
+            allowedHours: 25,
+            wiwUserId: parseInt(wiwUserId)  // Store WhenIWork user ID
         });
-        console.log("Firestore document created successfully!");
+        console.log("Firestore document created successfully with WIW ID:", wiwUserId);
 
         console.log("Account created successfully!");
         alert("Account created successfully! Please sign in.");

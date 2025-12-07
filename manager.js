@@ -2,7 +2,7 @@ import { auth, db } from './firebase-config.js';
 import { onAuthStateChanged, signOut } from "https://www.gstatic.com/firebasejs/12.6.0/firebase-auth.js";
 import { collection, getDocs, doc, getDoc, updateDoc, arrayUnion, arrayRemove, addDoc, deleteDoc, Timestamp } from "https://www.gstatic.com/firebasejs/12.6.0/firebase-firestore.js";
 import { getPageUrl, getApiUrl } from './utils.js';
-import { initialize as initializeWhenIWork, getScheduledWeek, getScheduledQuarter, getScheduledYear, createWIWShift, deleteWIWShift, getUser } from './wheniwork.js';
+import { initialize as initializeWhenIWork, getScheduledWeek, getScheduledQuarter, getScheduledYear, createWIWShift, deleteWIWShift } from './wheniwork.js';
 
 let currentUser = null;
 let allUsers = [];
@@ -1488,28 +1488,24 @@ async function saveTask() {
                     // Create WhenIWork shift for newly assigned user
                     try {
                         const user = allUsers.find(u => u.id === userId);
-                        if (user && taskData.due) {
-                            const wiwUsers = getUser(user.fullName);
-                            if (wiwUsers && wiwUsers.length > 0) {
-                                const wiwUser = wiwUsers[0];
-                                const dueDate = taskData.due.toDate ? taskData.due.toDate() : new Date(taskData.due);
-                                const taskHours = taskData.hours || 0;
-                                const startTime = new Date(dueDate.getTime() - (taskHours * 60 * 60 * 1000));
+                        if (user && taskData.due && user.wiwUserId) {
+                            const dueDate = taskData.due.toDate ? taskData.due.toDate() : new Date(taskData.due);
+                            const taskHours = taskData.hours || 0;
+                            const startTime = new Date(dueDate.getTime() - (taskHours * 60 * 60 * 1000));
 
-                                console.log(`Creating WhenIWork shift for ${user.fullName} (WIW ID: ${wiwUser.id})`);
-                                const wiwShiftID = await createWIWShift(
-                                    wiwUser.id,
-                                    startTime.toISOString(),
-                                    dueDate.toISOString(),
-                                    `Task: ${taskData.title}`,
-                                    taskData.description || 'No description provided.'
-                                );
+                            console.log(`Creating WhenIWork shift for ${user.fullName} (WIW ID: ${user.wiwUserId})`);
+                            const wiwShiftID = await createWIWShift(
+                                user.wiwUserId,
+                                startTime.toISOString(),
+                                dueDate.toISOString(),
+                                `Task: ${taskData.title}`,
+                                taskData.description || 'No description provided.'
+                            );
 
-                                wiwShiftIDs[userId] = wiwShiftID;
-                                console.log(`✓ WhenIWork shift ${wiwShiftID} created for user ${userId}`);
-                            } else {
-                                console.warn(`WhenIWork user not found for ${user.fullName}`);
-                            }
+                            wiwShiftIDs[userId] = wiwShiftID;
+                            console.log(`✓ WhenIWork shift ${wiwShiftID} created for user ${userId}`);
+                        } else if (user && taskData.due && !user.wiwUserId) {
+                            console.warn(`User ${user.fullName} does not have a wiwUserId set - cannot create shift`);
                         }
                     } catch (wiwError) {
                         console.error(`Error creating WhenIWork shift for user ${userId}:`, wiwError);
@@ -1603,28 +1599,24 @@ async function saveTask() {
                     // Create WhenIWork shift for assigned user
                     try {
                         const user = allUsers.find(u => u.id === userId);
-                        if (user && taskData.due) {
-                            const wiwUsers = getUser(user.fullName);
-                            if (wiwUsers && wiwUsers.length > 0) {
-                                const wiwUser = wiwUsers[0];
-                                const dueDate = taskData.due.toDate ? taskData.due.toDate() : new Date(taskData.due);
-                                const taskHours = taskData.hours || 0;
-                                const startTime = new Date(dueDate.getTime() - (taskHours * 60 * 60 * 1000));
+                        if (user && taskData.due && user.wiwUserId) {
+                            const dueDate = taskData.due.toDate ? taskData.due.toDate() : new Date(taskData.due);
+                            const taskHours = taskData.hours || 0;
+                            const startTime = new Date(dueDate.getTime() - (taskHours * 60 * 60 * 1000));
 
-                                console.log(`Creating WhenIWork shift for ${user.fullName} (WIW ID: ${wiwUser.id})`);
-                                const wiwShiftID = await createWIWShift(
-                                    wiwUser.id,
-                                    startTime.toISOString(),
-                                    dueDate.toISOString(),
-                                    `Task: ${taskData.title}`,
-                                    taskData.description || 'No description provided.'
-                                );
+                            console.log(`Creating WhenIWork shift for ${user.fullName} (WIW ID: ${user.wiwUserId})`);
+                            const wiwShiftID = await createWIWShift(
+                                user.wiwUserId,
+                                startTime.toISOString(),
+                                dueDate.toISOString(),
+                                `Task: ${taskData.title}`,
+                                taskData.description || 'No description provided.'
+                            );
 
-                                wiwShiftIDs[userId] = wiwShiftID;
-                                console.log(`✓ WhenIWork shift ${wiwShiftID} created for user ${userId}`);
-                            } else {
-                                console.warn(`WhenIWork user not found for ${user.fullName}`);
-                            }
+                            wiwShiftIDs[userId] = wiwShiftID;
+                            console.log(`✓ WhenIWork shift ${wiwShiftID} created for user ${userId}`);
+                        } else if (user && taskData.due && !user.wiwUserId) {
+                            console.warn(`User ${user.fullName} does not have a wiwUserId set - cannot create shift`);
                         }
                     } catch (wiwError) {
                         console.error(`Error creating WhenIWork shift for user ${userId}:`, wiwError);

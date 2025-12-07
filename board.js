@@ -2,7 +2,7 @@ import { auth, db } from './firebase-config.js';
 import { onAuthStateChanged } from "https://www.gstatic.com/firebasejs/12.6.0/firebase-auth.js";
 import { collection, getDocs, doc, getDoc, updateDoc, arrayUnion, arrayRemove } from "https://www.gstatic.com/firebasejs/12.6.0/firebase-firestore.js";
 import { getPageUrl } from './utils.js';
-import { initialize as initializeWhenIWork, createWIWShift, deleteWIWShift, getUser } from './wheniwork.js';
+import { initialize as initializeWhenIWork, createWIWShift, deleteWIWShift } from './wheniwork.js';
 
 let currentUser = null;
 let tasksData = [];
@@ -419,12 +419,10 @@ async function handleClaim(event) {
             whenIWorkInitialized = true;
         }
 
-        // Find WhenIWork user by name
-        const wiwUsers = getUser(currentUser.fullName);
-        if (!wiwUsers || wiwUsers.length === 0) {
-            throw new Error(`WhenIWork user not found for ${currentUser.fullName}`);
+        // Check if user has wiwUserId
+        if (!currentUser.wiwUserId) {
+            throw new Error(`User ${currentUser.fullName} does not have a wiwUserId set - cannot create shift`);
         }
-        const wiwUser = wiwUsers[0]; // Take first match
 
         // Calculate shift start and end times
         const dueDate = task.due.toDate ? task.due.toDate() : new Date(task.due);
@@ -436,9 +434,9 @@ async function handleClaim(event) {
         const endTimeISO = dueDate.toISOString();
 
         // Create WhenIWork shift for this user
-        console.log(`Creating WhenIWork shift for ${currentUser.fullName} (WIW ID: ${wiwUser.id})`);
+        console.log(`Creating WhenIWork shift for ${currentUser.fullName} (WIW ID: ${currentUser.wiwUserId})`);
         const wiwShiftID = await createWIWShift(
-            wiwUser.id,
+            currentUser.wiwUserId,
             startTimeISO,
             endTimeISO,
             `Task: ${task.title}`,

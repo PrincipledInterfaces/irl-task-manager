@@ -199,12 +199,28 @@ function getUser(searchString) {
   const filteredUsers = users.filter(user => {
     const fullName = `${user.first_name || ''} ${user.last_name || ''}`.toLowerCase();
     const email = (user.email || '').toLowerCase();
-    
+
     return fullName.includes(searchLower) || email.includes(searchLower);
   });
 
   console.log(`Found ${filteredUsers.length} matching users`);
   return filteredUsers;
+}
+
+// Get user by wiwUserId
+function getUserById(wiwUserId) {
+  if (!wiwUserId || !users.length) {
+    console.log('No wiwUserId provided or users not loaded');
+    return null;
+  }
+
+  const user = users.find(u => u.id === wiwUserId);
+  if (user) {
+    console.log(`Found user by ID ${wiwUserId}: ${user.first_name} ${user.last_name}`);
+  } else {
+    console.log(`No user found with ID ${wiwUserId}`);
+  }
+  return user || null;
 }
 
 // Initialize everything
@@ -256,7 +272,7 @@ async function initialize() {
 }
 
 // Export the loadCredentials function so it can be called before other functions
-export { loadCredentials, initialize, login, getAllUsers, getUser, getShifts, getScheduledWeek, getScheduledQuarter, getScheduledYear };
+export { loadCredentials, initialize, login, getAllUsers, getUser, getUserById, getShifts, getScheduledWeek, getScheduledQuarter, getScheduledYear };
 
 async function getScheduledWeek() {
     // Assumes initialize() has already been called
