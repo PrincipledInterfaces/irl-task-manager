@@ -387,30 +387,11 @@ function openUserDialog(userId) {
 }
 
 function renderTaskHistory(historicalTasks) {
-    const dialog = document.getElementById('editUser');
+    const historySection = document.getElementById('taskHistoryTitle');
+    const historyArticle = document.getElementById('taskHistoryContent');
 
-    // Task history is in a standalone article element (after the hr following the flex container)
-    // Find the h5 with "Task History:" text
-    const allH5s = dialog.querySelectorAll('h5');
-    let historySection = null;
-
-    for (const h5 of allH5s) {
-        if (h5.textContent.includes('Task History')) {
-            historySection = h5;
-            break;
-        }
-    }
-
-    if (!historySection) {
-        console.warn('Task history section not found in dialog');
-        return;
-    }
-
-    // The article element is the next sibling after the h5
-    const historyArticle = historySection.nextElementSibling;
-
-    if (!historyArticle || historyArticle.tagName !== 'ARTICLE') {
-        console.warn('Task history article not found in dialog');
+    if (!historySection || !historyArticle) {
+        console.warn('Task history elements not found');
         return;
     }
 
