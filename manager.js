@@ -3,6 +3,7 @@ import { onAuthStateChanged, signOut } from "https://www.gstatic.com/firebasejs/
 import { collection, getDocs, doc, getDoc, updateDoc, arrayUnion, arrayRemove, addDoc, deleteDoc, Timestamp } from "https://www.gstatic.com/firebasejs/12.6.0/firebase-firestore.js";
 import { getPageUrl, getApiUrl } from './utils.js';
 import { initialize as initializeWhenIWork, getScheduledWeek, getScheduledQuarter, getScheduledYear, createWIWShift, deleteWIWShift } from './wheniwork.js';
+import { fadeIn, fadeInStagger } from './animations.js';
 
 let currentUser = null;
 let allUsers = [];
@@ -246,6 +247,7 @@ function renderTeamList() {
 
     if (regularUsers.length === 0) {
         teamContainer.innerHTML = '<p>No team members found.</p>';
+        fadeIn(teamContainer.querySelector('p'));
         return;
     }
 
@@ -262,6 +264,9 @@ function renderTeamList() {
 
         return `<a class="hoveranim user-link" href="#" data-user-id="${user.id}"><span class="badge badge-${badgeColor}"><i class="fa-solid fa-user"></i> ${user.fullName}</span></a>`;
     }).join('\n');
+
+    // Animate team member badges with stagger effect
+    fadeInStagger(teamContainer, '.user-link');
 
     // Attach click listeners
     document.querySelectorAll('.user-link').forEach(link => {
@@ -793,11 +798,14 @@ async function renderHours() {
     updateCircularProgress('quarterly', totalHoursQuarter, budgetData.quarterlyBudget, 'this quarter');
     updateCircularProgress('yearly', totalHoursYear, budgetData.yearlyBudget, 'this year');
 
-    // Hide loader and show content
+    // Hide loader and show content with animation
     const loader = document.getElementById('overviewLoader');
     const content = document.getElementById('overviewContent');
     if (loader) loader.style.display = 'none';
-    if (content) content.style.display = 'block';
+    if (content) {
+        content.style.display = 'block';
+        fadeIn(content);
+    }
 
     console.log('[Render Hours] UI updated successfully');
 }
@@ -957,6 +965,7 @@ function renderTasksTab() {
 
     if (sortedTasks.length === 0) {
         tasksContainer.innerHTML = '<article><p>No tasks match the current filters. Try adjusting your filter settings.</p></article>';
+        fadeIn(tasksContainer.querySelector('article'));
         return;
     }
 
@@ -1006,6 +1015,9 @@ function renderTasksTab() {
     }
 
     tasksContainer.innerHTML = html;
+
+    // Animate task cards with stagger effect
+    fadeInStagger(tasksContainer, '.task-card');
 
     // Attach click listeners
     document.querySelectorAll('.task-card').forEach(card => {

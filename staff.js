@@ -3,6 +3,7 @@ import { onAuthStateChanged, signOut } from "https://www.gstatic.com/firebasejs/
 import { collection, getDocs, doc, getDoc, updateDoc, arrayRemove, Timestamp } from "https://www.gstatic.com/firebasejs/12.6.0/firebase-firestore.js";
 import { getPageUrl } from './utils.js';
 import { initialize as initializeWhenIWork, getUserById, deleteWIWShift } from './wheniwork.js';
+import { fadeIn, fadeInStagger } from './animations.js';
 
 let currentUser = null;
 let tasksData = [];
@@ -19,9 +20,10 @@ onAuthStateChanged(auth, async (user) => {
             };
             console.log("Logged in as:", currentUser.fullName);
 
-            // Update greeting
+            // Update greeting with animation
             const nameText = document.getElementById('nameText');
             nameText.textContent = `Hello ${currentUser.fullName}!`;
+            fadeIn(nameText);
 
             // Initialize WhenIWork once (login + get users)
             console.log('[Render Hours] Initializing WhenIWork...');
@@ -314,9 +316,12 @@ function renderBoard() {
     console.log("User tasks:", userTasks);
     if (userTasks.length === 0) {
         boardContainer.innerHTML = '<h4>You have no assigned tasks at the moment.</h4>';
+        fadeIn(boardContainer.querySelector('h4'));
         return;
     } else {
         boardContainer.innerHTML = userTasks.map(task => renderJobCard(task)).join('');
+        // Add stagger animation to task cards
+        fadeInStagger(boardContainer, 'article');
     }
     console.log("User dashboard rendered with", userTasks.length, "tasks");
 
@@ -326,8 +331,11 @@ function renderBoard() {
 
 // Renders skills
 function renderSkills() {
+    const skillsContainer = document.getElementById('skillsContainer');
+
     if (!currentUser.skills || currentUser.skills.length === 0) {
-        document.getElementById('skillsContainer').innerHTML = '<p>No skills specified.</p>';
+        skillsContainer.innerHTML = '<p>No skills specified.</p>';
+        fadeIn(skillsContainer.querySelector('p'));
         return;
     }
 
@@ -335,8 +343,11 @@ function renderSkills() {
         const skillElement = document.createElement('span');
         skillElement.className = 'badge badge-blue';
         skillElement.innerHTML = `${skill}`;
-        document.getElementById('skillsContainer').appendChild(skillElement);
+        skillsContainer.appendChild(skillElement);
     });
+
+    // Animate all skill badges with stagger effect
+    fadeInStagger(skillsContainer, '.badge');
 }
 
 // Handle unclaim and complete button clicks

@@ -3,6 +3,7 @@ import { onAuthStateChanged } from "https://www.gstatic.com/firebasejs/12.6.0/fi
 import { collection, getDocs, doc, getDoc, updateDoc, arrayUnion, arrayRemove } from "https://www.gstatic.com/firebasejs/12.6.0/firebase-firestore.js";
 import { getPageUrl } from './utils.js';
 import { initialize as initializeWhenIWork, createWIWShift, deleteWIWShift } from './wheniwork.js';
+import { fadeIn, fadeInStagger } from './animations.js';
 
 let currentUser = null;
 let tasksData = [];
@@ -306,9 +307,12 @@ function renderBoard() {
     console.log("Active tasks:", activeTasks);
     if (activeTasks.length === 0) {
         boardContainer.innerHTML = '<h4>No tasks match the current filters. Try adjusting your filter settings.</h4>';
+        fadeIn(boardContainer.querySelector('h4'));
         return;
     } else {
         boardContainer.innerHTML = activeTasks.map(task => renderJobCard(task)).join('');
+        // Animate task cards with stagger effect
+        fadeInStagger(boardContainer, 'article');
     }
     console.log("Board rendered with", activeTasks.length, "tasks");
 
