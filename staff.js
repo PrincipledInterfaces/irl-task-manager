@@ -322,83 +322,20 @@ function renderBoard() {
 
     // Attach event listeners to unclaim and complete buttons
     attachUnclaimListeners();
-
-    // Setup smooth animations for details elements
-    setupDetailsAnimations();
 }
 
-// Renders skills 
+// Renders skills
 function renderSkills() {
     if (!currentUser.skills || currentUser.skills.length === 0) {
         document.getElementById('skillsContainer').innerHTML = '<p>No skills specified.</p>';
         return;
     }
 
-    currentUser.skills.forEach((skill, index) => {
+    currentUser.skills.forEach((skill) => {
         const skillElement = document.createElement('span');
         skillElement.className = 'badge badge-blue';
         skillElement.innerHTML = `${skill}`;
         document.getElementById('skillsContainer').appendChild(skillElement);
-    });
-}
-
-// Setup smooth animations for details dropdowns
-function setupDetailsAnimations() {
-    const detailsElements = document.querySelectorAll('details');
-
-    detailsElements.forEach(details => {
-        const summary = details.querySelector('summary');
-        const content = details.querySelector('.details-content');
-
-        summary.addEventListener('click', (e) => {
-            e.preventDefault();
-
-            if (details.hasAttribute('open')) {
-                // Closing
-                const startHeight = content.scrollHeight;
-                content.style.height = startHeight + 'px';
-
-                // Force browser to acknowledge the height
-                content.offsetHeight;
-
-                details.classList.add('is-closing');
-                content.style.height = '0px';
-                content.style.opacity = '0';
-
-                const onTransitionEnd = (e) => {
-                    if (e.propertyName === 'height') {
-                        requestAnimationFrame(() => {
-                            details.removeAttribute('open');
-                            details.classList.remove('is-closing');
-                        });
-                        content.removeEventListener('transitionend', onTransitionEnd);
-                    }
-                };
-                content.addEventListener('transitionend', onTransitionEnd);
-            } else {
-                // Opening
-                details.setAttribute('open', '');
-                details.classList.add('is-opening');
-                const endHeight = content.scrollHeight;
-                content.style.height = '0px';
-                content.style.opacity = '0';
-
-                requestAnimationFrame(() => {
-                    requestAnimationFrame(() => {
-                        content.style.height = endHeight + 'px';
-                        content.style.opacity = '1';
-                    });
-                });
-
-                const onTransitionEnd = (e) => {
-                    if (e.propertyName === 'height') {
-                        details.classList.remove('is-opening');
-                        content.removeEventListener('transitionend', onTransitionEnd);
-                    }
-                };
-                content.addEventListener('transitionend', onTransitionEnd);
-            }
-        });
     });
 }
 
