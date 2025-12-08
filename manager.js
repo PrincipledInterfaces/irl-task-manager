@@ -1719,7 +1719,8 @@ async function saveTask() {
                     hours: Math.floor(hours / 2), // Half the hours
                     apprenticeTask: false, // Don't cascade apprentice task creation
                     assignedTo: [],
-                    assignedToNames: []
+                    assignedToNames: [],
+                    requiredSkills: [] // Apprentice tasks have no skill requirements
                 };
 
                 const apprenticeDocRef = await addDoc(collection(db, "tasks"), apprenticeTaskData);
