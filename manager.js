@@ -289,10 +289,37 @@ function openUserDialog(userId) {
     const userName = dialog.querySelector('h2');
     userName.innerHTML = `<i class="fa-solid fa-user"></i> ${selectedUser.fullName}`;
 
-    // Get user's active tasks
-    const userTasks = allTasks.filter(task =>
-        task.assignedTo && task.assignedTo.includes(selectedUser.id) && !task.completed
-    );
+    const now = new Date();
+
+    // Get user's active tasks (not completed and not expired)
+    const userTasks = allTasks.filter(task => {
+        if (!task.assignedTo || !task.assignedTo.includes(selectedUser.id)) return false;
+        if (task.completed) return false;
+
+        // Exclude expired nonflexible tasks
+        if (task.nonflexible && task.due) {
+            const dueDate = task.due.toDate ? task.due.toDate() : new Date(task.due);
+            if (dueDate < now) return false;
+        }
+
+        return true;
+    });
+
+    // Get user's historical tasks (completed or expired nonflexible)
+    const historicalTasks = allTasks.filter(task => {
+        if (!task.assignedTo || !task.assignedTo.includes(selectedUser.id)) return false;
+
+        // Include completed tasks
+        if (task.completed) return true;
+
+        // Include expired nonflexible tasks
+        if (task.nonflexible && task.due) {
+            const dueDate = task.due.toDate ? task.due.toDate() : new Date(task.due);
+            if (dueDate < now) return true;
+        }
+
+        return false;
+    });
 
     // Render active tasks
     const flexContainer = dialog.querySelector('div[style*="display: flex"]');
@@ -349,11 +376,45 @@ function openUserDialog(userId) {
         });
     }
 
+    //Render task history
+    renderTaskHistory(historicalTasks);
+
     // Render skills
     renderSkillsInDialog();
 
     // Show dialog
     dialog.showModal();
+}
+
+function renderTaskHistory(historicalTasks) {
+    const dialog = document.getElementById('editUser');
+    const flexContainer = dialog.querySelector('div[style*="display: flex"]');
+    const allDivs = flexContainer.querySelectorAll(':scope > div');
+
+    // Assuming task history is in the third div (index 2)
+    if (allDivs.length < 3) {
+        console.warn('Task history section not found in dialog');
+        return;
+    }
+
+    const historyDiv = allDivs[2]; // Third div is task history
+    const historySection = historyDiv.querySelector('h5');
+    const historyArticle = historyDiv.querySelector('article');
+
+    // Update section title
+    historySection.textContent = `${historicalTasks.length} Historical Task${historicalTasks.length !== 1 ? 's' : ''}`;
+
+    if (historicalTasks.length === 0) {
+        historyArticle.innerHTML = '<p style="color: #888;">No task history</p>';
+    } else {
+        historyArticle.innerHTML = historicalTasks.map(task => {
+            const statusBadge = task.completed
+                ? '<span class="badge badge-green">Completed</span>'
+                : '<span class="badge badge-red">Expired</span>';
+
+            return `<span class="badge badge-gray"><i class="fa-solid fa-${task.icon || 'list'}"></i> ${task.title} | ${task.hours} Hrs ${statusBadge}</span><br>`;
+        }).join('');
+    }
 }
 
 // Render skills in dialog
@@ -394,7 +455,6 @@ closeButton.addEventListener('click', () => {
 });
 
 // Add skill button
-const addSkillButton = dialog.querySelector('button[class=""]');
 const addSkillButtons = Array.from(dialog.querySelectorAll('button')).filter(btn =>
     btn.textContent.includes('Add Skill')
 );
@@ -2007,11 +2067,10 @@ function setupEditBudgetButton() {
     }
 }
 
-// Compute missing budget values. Assumptions: 4 quarters/year, 52 weeks/year (=> 13 weeks/quarter)
+// Compute missing budget values. Assumptions: 4 quarters/year, 52 weeks/year
 function computeBudgetValues({ quarterly, weekly, yearly }) {
     const WEEKS_PER_YEAR = 52;
     const QUARTERS_PER_YEAR = 4;
-    const WEEKS_PER_QUARTER = WEEKS_PER_YEAR / QUARTERS_PER_YEAR; // 13
 
     // Normalize invalid entries to null
     quarterly = (typeof quarterly === 'number' && !isNaN(quarterly) && quarterly >= 0) ? quarterly : null;

@@ -360,7 +360,7 @@
                     <strong>View/edit person</strong>
                 </p>
             </header>
-            <h2><i class="fa-solid fa-user"></i> Auriel Kremp</h2>
+            <h2><i class="fa-solid fa-user"></i> Loading...</h2>
             <hr>
             <h5>Allowed Hours per Quarter:</h5>
             <input type="number" id="userAllowedHours" value="25" min="0" style="width: 80px;">
@@ -371,15 +371,24 @@
                     <article style="flex: 1;">
                         <!-- Tasks will be populated by manager.js -->
                     </article>
-                    <div style="text-align: left;"><button style="background-color: rgb(255, 93, 93); border-color: rgb(255, 93, 93);"><i class="fa-solid fa-trash"></i> Delete User</button></div>
                 </div>
                 <div style="flex: 1; display: flex; flex-direction: column;">
                     <h6>Skills:</h6>
                     <article style="flex: 1;">
                         <!-- Skills will be populated by manager.js -->
                     </article>
-                    <div style="text-align: right;"><button><i class="fa-solid fa-plus"></i> Add Skill</button></div>
                 </div>
+            </div>
+            <hr>
+            <h5>Task History:</h5>
+            <article style="max-height: 200px; overflow-y: auto; border: 1px solid var(--pico-muted-border-color); border-radius: 0.5rem; padding: 1rem; background: var(--pico-card-background-color);">
+                <!-- Task history will be populated by manager.js -->
+            </article>
+            <hr>
+            <div style="display: flex; gap: 20px; align-items: stretch;">
+                <div style="flex: 1; display: flex; flex-direction: column;"><div style="text-align: left;"><button style="background-color: rgb(255, 93, 93); border-color: rgb(255, 93, 93);"><i class="fa-solid fa-trash"></i> Delete User</button></div></div>
+                <div style="flex: 1; display: flex; flex-direction: column;"><div style="text-align: right;"><button><i class="fa-solid fa-plus"></i> Add Skill</button></div></div>
+            </div>
         </article>
     </dialog>
 
