@@ -424,6 +424,31 @@ async function handleUnclaim(event) {
                 currentUser.assignedJobIds.splice(index, 1);
             }
 
+            // Send Slack notification
+            try {
+                const idToken = await auth.currentUser.getIdToken();
+                await fetch(getApiUrl('notify/task-unclaimed'), {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json',
+                        'Authorization': `Bearer ${idToken}`
+                    },
+                    body: JSON.stringify({
+                        taskData: {
+                            title: task.title,
+                            hours: task.hours,
+                            due: task.due
+                        },
+                        userData: {
+                            email: currentUser.email,
+                            fullName: currentUser.fullName
+                        }
+                    })
+                });
+            } catch (slackError) {
+                console.warn('Slack notification failed (non-critical):', slackError);
+            }
+
             // Re-render the board and hours to show updated state
             renderWeeklyHours();
             renderBoard();
@@ -471,6 +496,45 @@ async function handleComplete(event) {
             const index = currentUser.assignedJobIds.indexOf(taskId);
             if (index > -1) {
                 currentUser.assignedJobIds.splice(index, 1);
+            }
+
+            // Send Slack notification to all assigned users
+            try {
+                // Get all assigned users' data from Firestore
+                const assignedUsersData = [];
+                for (let i = 0; i < assignedUsers.length; i++) {
+                    const userId = assignedUsers[i];
+                    const userDoc = await getDoc(doc(db, "users", userId));
+                    if (userDoc.exists()) {
+                        assignedUsersData.push({
+                            email: userDoc.data().email,
+                            fullName: userDoc.data().fullName
+                        });
+                    }
+                }
+
+                const idToken = await auth.currentUser.getIdToken();
+                await fetch(getApiUrl('notify/task-completed'), {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json',
+                        'Authorization': `Bearer ${idToken}`
+                    },
+                    body: JSON.stringify({
+                        taskData: {
+                            title: task.title,
+                            hours: task.hours,
+                            due: task.due
+                        },
+                        userData: {
+                            email: currentUser.email,
+                            fullName: currentUser.fullName
+                        },
+                        assignedUsers: assignedUsersData
+                    })
+                });
+            } catch (slackError) {
+                console.warn('Slack notification failed (non-critical):', slackError);
             }
 
             // Re-render the board and hours to show updated state

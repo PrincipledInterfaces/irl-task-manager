@@ -1582,6 +1582,35 @@ async function saveTask() {
                     } catch (wiwError) {
                         console.error(`Error creating WhenIWork shift for user ${userId}:`, wiwError);
                     }
+
+                    // Send Slack notification for newly assigned user
+                    try {
+                        const user = allUsers.find(u => u.id === userId);
+                        if (user) {
+                            const idToken = await auth.currentUser.getIdToken();
+                            await fetch(getApiUrl('notify/task-assigned'), {
+                                method: 'POST',
+                                headers: {
+                                    'Content-Type': 'application/json',
+                                    'Authorization': `Bearer ${idToken}`
+                                },
+                                body: JSON.stringify({
+                                    taskData: {
+                                        title: taskData.title,
+                                        hours: taskData.hours,
+                                        due: taskData.due
+                                    },
+                                    userData: {
+                                        email: user.email,
+                                        fullName: user.fullName
+                                    }
+                                })
+                            });
+                            console.log(`✓ Slack notification sent for user ${user.fullName}`);
+                        }
+                    } catch (slackError) {
+                        console.warn('Slack notification failed (non-critical):', slackError);
+                    }
                 } catch (error) {
                     console.error(`Error updating assignedJobIds for user ${userId}:`, error);
                 }
@@ -1692,6 +1721,35 @@ async function saveTask() {
                         }
                     } catch (wiwError) {
                         console.error(`Error creating WhenIWork shift for user ${userId}:`, wiwError);
+                    }
+
+                    // Send Slack notification for newly assigned user
+                    try {
+                        const user = allUsers.find(u => u.id === userId);
+                        if (user) {
+                            const idToken = await auth.currentUser.getIdToken();
+                            await fetch(getApiUrl('notify/task-assigned'), {
+                                method: 'POST',
+                                headers: {
+                                    'Content-Type': 'application/json',
+                                    'Authorization': `Bearer ${idToken}`
+                                },
+                                body: JSON.stringify({
+                                    taskData: {
+                                        title: taskData.title,
+                                        hours: taskData.hours,
+                                        due: taskData.due
+                                    },
+                                    userData: {
+                                        email: user.email,
+                                        fullName: user.fullName
+                                    }
+                                })
+                            });
+                            console.log(`✓ Slack notification sent for user ${user.fullName}`);
+                        }
+                    } catch (slackError) {
+                        console.warn('Slack notification failed (non-critical):', slackError);
                     }
                 } catch (error) {
                     console.error(`Error updating assignedJobIds for user ${userId}:`, error);

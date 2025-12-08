@@ -2,6 +2,7 @@ const express = require('express');
 const admin = require('firebase-admin');
 const cors = require('cors');
 const https = require('https');
+const { initSlack, sendTaskNotification } = require('./slack');
 require('dotenv').config();
 
 const app = express();
@@ -38,6 +39,9 @@ admin.initializeApp({
 });
 
 const db = admin.firestore();
+
+// Initialize Slack integration
+initSlack();
 
 // Health check endpoint
 app.get('/health', (req, res) => {
@@ -544,6 +548,146 @@ setInterval(async () => {
     }
   }
 }, 60000); // Check every minute
+
+// ==================== SLACK NOTIFICATION ENDPOINTS ====================
+
+// Notify when a user is assigned to a task
+app.post('/api/notify/task-assigned', async (req, res) => {
+  try {
+    // Get the ID token from the Authorization header
+    const authHeader = req.headers.authorization;
+    if (!authHeader || !authHeader.startsWith('Bearer ')) {
+      return res.status(401).json({ error: 'Unauthorized - No token provided' });
+    }
+
+    const idToken = authHeader.split('Bearer ')[1];
+
+    // Verify the ID token
+    let decodedToken;
+    try {
+      decodedToken = await admin.auth().verifyIdToken(idToken);
+    } catch (error) {
+      return res.status(401).json({ error: 'Unauthorized - Invalid token' });
+    }
+
+    // Check if user exists in database
+    const userDoc = await db.collection('users').doc(decodedToken.uid).get();
+    if (!userDoc.exists) {
+      return res.status(403).json({ error: 'Permission denied - User not found in database' });
+    }
+
+    // Get task and user data from request
+    const { taskData, userData } = req.body;
+
+    if (!taskData || !userData) {
+      return res.status(400).json({ error: 'taskData and userData are required' });
+    }
+
+    // Send Slack notification
+    const result = await sendTaskNotification('task-assigned', taskData, userData);
+
+    res.json({
+      success: result.success,
+      message: result.message
+    });
+
+  } catch (error) {
+    console.error('Error sending task assigned notification:', error);
+    res.status(500).json({ error: 'Failed to send notification', details: error.message });
+  }
+});
+
+// Notify when a user unclaims a task
+app.post('/api/notify/task-unclaimed', async (req, res) => {
+  try {
+    // Get the ID token from the Authorization header
+    const authHeader = req.headers.authorization;
+    if (!authHeader || !authHeader.startsWith('Bearer ')) {
+      return res.status(401).json({ error: 'Unauthorized - No token provided' });
+    }
+
+    const idToken = authHeader.split('Bearer ')[1];
+
+    // Verify the ID token
+    let decodedToken;
+    try {
+      decodedToken = await admin.auth().verifyIdToken(idToken);
+    } catch (error) {
+      return res.status(401).json({ error: 'Unauthorized - Invalid token' });
+    }
+
+    // Check if user exists in database
+    const userDoc = await db.collection('users').doc(decodedToken.uid).get();
+    if (!userDoc.exists) {
+      return res.status(403).json({ error: 'Permission denied - User not found in database' });
+    }
+
+    // Get task and user data from request
+    const { taskData, userData } = req.body;
+
+    if (!taskData || !userData) {
+      return res.status(400).json({ error: 'taskData and userData are required' });
+    }
+
+    // Send Slack notification
+    const result = await sendTaskNotification('task-unclaimed', taskData, userData);
+
+    res.json({
+      success: result.success,
+      message: result.message
+    });
+
+  } catch (error) {
+    console.error('Error sending task unclaimed notification:', error);
+    res.status(500).json({ error: 'Failed to send notification', details: error.message });
+  }
+});
+
+// Notify when a task is completed
+app.post('/api/notify/task-completed', async (req, res) => {
+  try {
+    // Get the ID token from the Authorization header
+    const authHeader = req.headers.authorization;
+    if (!authHeader || !authHeader.startsWith('Bearer ')) {
+      return res.status(401).json({ error: 'Unauthorized - No token provided' });
+    }
+
+    const idToken = authHeader.split('Bearer ')[1];
+
+    // Verify the ID token
+    let decodedToken;
+    try {
+      decodedToken = await admin.auth().verifyIdToken(idToken);
+    } catch (error) {
+      return res.status(401).json({ error: 'Unauthorized - Invalid token' });
+    }
+
+    // Check if user exists in database
+    const userDoc = await db.collection('users').doc(decodedToken.uid).get();
+    if (!userDoc.exists) {
+      return res.status(403).json({ error: 'Permission denied - User not found in database' });
+    }
+
+    // Get task and user data from request
+    const { taskData, userData, assignedUsers } = req.body;
+
+    if (!taskData || !userData) {
+      return res.status(400).json({ error: 'taskData and userData are required' });
+    }
+
+    // Send Slack notification (with assigned users for @mentions)
+    const result = await sendTaskNotification('task-completed', taskData, userData, { assignedUsers });
+
+    res.json({
+      success: result.success,
+      message: result.message
+    });
+
+  } catch (error) {
+    console.error('Error sending task completed notification:', error);
+    res.status(500).json({ error: 'Failed to send notification', details: error.message });
+  }
+});
 
 // Start server
 app.listen(PORT, () => {
