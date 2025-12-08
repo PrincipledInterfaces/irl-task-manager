@@ -146,3 +146,10 @@ progress {
   transform: scale(1.1);
   filter: brightness(0.8);
 }
+
+.backgroundblur {
+  backdrop-filter: blur(3px);
+  background-color: rgba(255, 255, 255, 0.329); /* semi-transparent white */
+  border-radius: 1rem;
+  padding: 1rem;
+}

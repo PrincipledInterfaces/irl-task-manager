@@ -30,6 +30,7 @@ onAuthStateChanged(auth, async (user) => {
             // Load tasks and render board
             await loadTasks();
             renderWeeklyHours();
+            renderSkills();
             renderBoard();
 
             // Setup logout button
@@ -324,6 +325,21 @@ function renderBoard() {
 
     // Setup smooth animations for details elements
     setupDetailsAnimations();
+}
+
+// Renders skills 
+function renderSkills() {
+    if (!currentUser.skills || currentUser.skills.length === 0) {
+        document.getElementById('skillsContainer').innerHTML = '<p>No skills specified.</p>';
+        return;
+    }
+
+    currentUser.skills.forEach((skill, index) => {
+        const skillElement = document.createElement('span');
+        skillElement.className = 'badge badge-blue';
+        skillElement.innerHTML = `${skill}`;
+        document.getElementById('skillsContainer').appendChild(skillElement);
+    });
 }
 
 // Setup smooth animations for details dropdowns
