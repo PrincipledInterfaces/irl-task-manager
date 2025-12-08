@@ -732,6 +732,12 @@ function setupHoursCalculationSwitch() {
                 noteElement.textContent = "Hour usage is based on tasks marked as 'complete' and shifts scheduled in WhenIWork.";
             }
 
+            // Show loader while recalculating
+            const loader = document.getElementById('overviewLoader');
+            const content = document.getElementById('overviewContent');
+            if (loader) loader.style.display = 'flex';
+            if (content) content.style.display = 'none';
+
             // Re-render hours with new calculation mode
             await renderHours();
         });
