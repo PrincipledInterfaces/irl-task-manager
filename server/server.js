@@ -383,20 +383,38 @@ app.post('/api/delete-user', async (req, res) => {
       console.warn(`Auth user not found: ${userId}`, authError.message);
     }
 
-    // Remove user from all assigned tasks
+    // Remove user from all assigned tasks and clean up WhenIWork shifts
     if (userData.assignedJobIds && userData.assignedJobIds.length > 0) {
-      const batch = db.batch();
-
       for (const taskId of userData.assignedJobIds) {
-        const taskRef = db.collection('tasks').doc(taskId);
-        batch.update(taskRef, {
-          assignedTo: admin.firestore.FieldValue.arrayRemove(userId),
-          assignedToNames: admin.firestore.FieldValue.arrayRemove(userName)
-        });
-      }
+        try {
+          const taskRef = db.collection('tasks').doc(taskId);
+          const taskDoc = await taskRef.get();
 
-      await batch.commit();
-      console.log(`Removed ${userName} from ${userData.assignedJobIds.length} tasks`);
+          if (taskDoc.exists) {
+            const taskData = taskDoc.data();
+
+            // Clean up WhenIWork shift if it exists
+            if (taskData.wiwShiftIDs && taskData.wiwShiftIDs[userId]) {
+              const updatedWiwShiftIDs = { ...taskData.wiwShiftIDs };
+              delete updatedWiwShiftIDs[userId];
+
+              await taskRef.update({
+                assignedTo: admin.firestore.FieldValue.arrayRemove(userId),
+                assignedToNames: admin.firestore.FieldValue.arrayRemove(userName),
+                wiwShiftIDs: updatedWiwShiftIDs
+              });
+            } else {
+              await taskRef.update({
+                assignedTo: admin.firestore.FieldValue.arrayRemove(userId),
+                assignedToNames: admin.firestore.FieldValue.arrayRemove(userName)
+              });
+            }
+          }
+        } catch (error) {
+          console.warn(`Task ${taskId} not found or error updating:`, error.message);
+        }
+      }
+      console.log(`Removed ${userName} from tasks`);
     }
 
     // Delete from Firestore
