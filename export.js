@@ -1,6 +1,30 @@
 import { collection, getDocs, getDoc, doc, query, where } from "https://www.gstatic.com/firebasejs/12.6.0/firebase-firestore.js";
-import { db } from './firebase-config.js';
+import { auth, db } from './firebase-config.js';
+import { onAuthStateChanged } from "https://www.gstatic.com/firebasejs/12.6.0/firebase-auth.js";
+import { getPageUrl } from './utils.js';
 
+// Check auth state and redirect if not logged in or not a manager
+onAuthStateChanged(auth, async (user) => {
+    if (user) {
+        const userDoc = await getDoc(doc(db, "users", user.uid));
+        if (userDoc.exists()) {
+            const currentUser = userDoc.data();
+
+            // Check if user is a manager
+            if (currentUser.role !== "manager") {
+                alert("Access denied. Manager privileges required.");
+                window.location.href = getPageUrl("board");
+                return;
+            }
+
+            console.log("Logged in as manager:", currentUser.fullName);
+        } else {
+            window.location.href = getPageUrl("signin");
+        }
+    } else {
+        window.location.href = getPageUrl("signin");
+    }
+});
 
 function exportData(datatype) {
     // uses string value of dropdown

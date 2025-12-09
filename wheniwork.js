@@ -274,7 +274,98 @@ async function initialize() {
 }
 
 // Export the loadCredentials function so it can be called before other functions
-export { loadCredentials, initialize, login, getAllUsers, getUser, getUserById, getShifts, getScheduledWeek, getScheduledQuarter, getScheduledYear };
+export { loadCredentials, initialize, login, getAllUsers, getUser, getUserById, getShifts, getScheduledWeek, getScheduledQuarter, getScheduledYear, getScheduledHours };
+
+// Efficient function that calculates week, quarter, and year hours in a single pass
+async function getScheduledHours(quarterDates) {
+    if (!token || !users || users.length === 0) {
+        console.error('[getScheduledHours] WhenIWork not initialized! Call initialize() first.');
+        return { week: 0, quarter: 0, year: 0 };
+    }
+
+    if (!quarterDates || !quarterDates.quarters) {
+        console.error('[getScheduledHours] Quarter data not provided!');
+        return { week: 0, quarter: 0, year: 0 };
+    }
+
+    const now = new Date();
+
+    // Calculate week range
+    const startOfWeek = new Date(now);
+    startOfWeek.setDate(now.getDate() - now.getDay());
+    startOfWeek.setHours(0, 0, 0, 0);
+    const endOfWeek = new Date(startOfWeek);
+    endOfWeek.setDate(startOfWeek.getDate() + 6);
+    endOfWeek.setHours(23, 59, 59, 999);
+
+    // Calculate quarter range
+    const quarterOrder = ['autumn', 'winter', 'spring', 'summer'];
+    const sortedQuarters = quarterOrder
+        .filter(q => quarterDates.quarters[q])
+        .map(q => ({
+            name: q,
+            start: new Date(quarterDates.quarters[q].start),
+            displayName: quarterDates.quarters[q].name
+        }));
+
+    let quarterStart = null;
+    let quarterEnd = null;
+    for (let i = 0; i < sortedQuarters.length; i++) {
+        const quarter = sortedQuarters[i];
+        const nextQuarter = sortedQuarters[i + 1];
+        const qStart = quarter.start;
+        const qEnd = nextQuarter ? nextQuarter.start : new Date(quarter.start.getFullYear() + 1, 8, 1);
+        if (now >= qStart && now < qEnd) {
+            quarterStart = qStart;
+            quarterEnd = qEnd;
+            console.log(`[WhenIWork] Current quarter: ${quarter.displayName}`);
+            break;
+        }
+    }
+
+    // Calculate year range
+    const autumn = quarterDates.quarters.autumn;
+    const academicYearStart = autumn ? new Date(autumn.start) : null;
+    const academicYearEnd = academicYearStart ? new Date(academicYearStart.getFullYear() + 1, 8, 1) : null;
+
+    if (academicYearStart && academicYearEnd) {
+        console.log(`[WhenIWork] Academic year: ${academicYearStart.toLocaleDateString()} - ${academicYearEnd.toLocaleDateString()}`);
+    }
+
+    let weekHours = 0;
+    let quarterHours = 0;
+    let yearHours = 0;
+
+    // Single pass through all users and shifts
+    for (const user of users) {
+        if (!user.shifts || user.shifts.length === 0) continue;
+
+        for (const shift of user.shifts) {
+            const shiftDate = new Date(shift.start_time);
+            const isTaskManagerShift = shift.notes && shift.notes.includes('(Created via IRL Task Manager');
+
+            if (isTaskManagerShift) continue; // Skip task manager shifts
+
+            // Check week
+            if (shiftDate >= startOfWeek && shiftDate <= endOfWeek) {
+                weekHours += shift.hours;
+            }
+
+            // Check quarter
+            if (quarterStart && quarterEnd && shiftDate >= quarterStart && shiftDate < quarterEnd) {
+                quarterHours += shift.hours;
+            }
+
+            // Check year
+            if (academicYearStart && academicYearEnd && shiftDate >= academicYearStart && shiftDate < academicYearEnd) {
+                yearHours += shift.hours;
+            }
+        }
+    }
+
+    console.log(`[WhenIWork] Calculated hours - Week: ${weekHours.toFixed(2)}, Quarter: ${quarterHours.toFixed(2)}, Year: ${yearHours.toFixed(2)}`);
+    return { week: weekHours, quarter: quarterHours, year: yearHours };
+}
 
 async function getScheduledWeek() {
     // Assumes initialize() has already been called

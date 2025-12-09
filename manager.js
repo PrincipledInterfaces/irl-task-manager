@@ -2,7 +2,7 @@ import { auth, db } from './firebase-config.js';
 import { onAuthStateChanged, signOut } from "https://www.gstatic.com/firebasejs/12.6.0/firebase-auth.js";
 import { collection, getDocs, doc, getDoc, updateDoc, arrayUnion, arrayRemove, addDoc, deleteDoc, Timestamp } from "https://www.gstatic.com/firebasejs/12.6.0/firebase-firestore.js";
 import { getPageUrl, getApiUrl } from './utils.js';
-import { initialize as initializeWhenIWork, getScheduledWeek, getScheduledQuarter, getScheduledYear, createWIWShift, deleteWIWShift } from './wheniwork.js';
+import { initialize as initializeWhenIWork, getScheduledHours, createWIWShift, deleteWIWShift } from './wheniwork.js';
 import { fadeIn, fadeInStagger } from './animations.js';
 
 let currentUser = null;
@@ -798,11 +798,16 @@ async function renderHours() {
     console.log('[Render Hours] Initializing WhenIWork...');
     await initializeWhenIWork().catch(err => { console.error('[WhenIWork Init]', err); });
 
-    // Fetch WhenIWork hours (now all three calls will use the same authenticated session)
+    // Fetch WhenIWork hours efficiently in a single pass
     console.log('[Render Hours] Fetching WhenIWork scheduled hours...');
-    const whenIWorkWeek = await getScheduledWeek().catch(err => { console.error('[WhenIWork Week]', err); return 0; });
-    const whenIWorkQuarter = await getScheduledQuarter().catch(err => { console.error('[WhenIWork Quarter]', err); return 0; });
-    const whenIWorkYear = await getScheduledYear().catch(err => { console.error('[WhenIWork Year]', err); return 0; });
+    const wiwHours = await getScheduledHours(quarterDates).catch(err => {
+        console.error('[WhenIWork Hours]', err);
+        return { week: 0, quarter: 0, year: 0 };
+    });
+
+    const whenIWorkWeek = wiwHours.week;
+    const whenIWorkQuarter = wiwHours.quarter;
+    const whenIWorkYear = wiwHours.year;
 
     console.log(`[Render Hours] WhenIWork hours - Week: ${whenIWorkWeek}, Quarter: ${whenIWorkQuarter}, Year: ${whenIWorkYear}`);
 
