@@ -97,7 +97,7 @@ async function handleWiwSearch() {
 
         resultsDiv.innerHTML = results.map(user =>
             `<div class="wiw-result" data-user-id="${user.id}" data-user-name="${user.first_name} ${user.last_name}" style="padding: 8px; cursor: pointer; border-bottom: 1px solid #eee;">
-                ${user.first_name} ${user.last_name} (${user.email || 'no email'})
+                ${user.first_name} ${user.last_name}
             </div>`
         ).join('');
 
