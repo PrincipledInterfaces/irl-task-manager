@@ -23,19 +23,21 @@ async function loadCredentials() {
   try {
     // Get current user's auth token
     const currentUser = auth.currentUser;
+
+    let response;
     if (!currentUser) {
-      console.warn('[WhenIWork] No authenticated user - cannot load credentials');
-      return CONFIG;
+      // No authenticated user - use public endpoint for signup page
+      console.log('[WhenIWork] No authenticated user - using public endpoint');
+      response = await fetch(getApiUrl('wheniwork-credentials-public'));
+    } else {
+      // Authenticated user - use protected endpoint
+      const idToken = await currentUser.getIdToken();
+      response = await fetch(getApiUrl('wheniwork-credentials'), {
+        headers: {
+          'Authorization': `Bearer ${idToken}`
+        }
+      });
     }
-
-    const idToken = await currentUser.getIdToken();
-
-    // Fetch credentials from server
-    const response = await fetch(getApiUrl('wheniwork-credentials'), {
-      headers: {
-        'Authorization': `Bearer ${idToken}`
-      }
-    });
 
     if (!response.ok) {
       throw new Error(`Failed to load WhenIWork credentials: ${response.statusText}`);

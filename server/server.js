@@ -97,6 +97,34 @@ app.get('/api/wheniwork-credentials', async (req, res) => {
   }
 });
 
+// WhenIWork credentials endpoint for signup (unauthenticated)
+// This allows the signup page to search for WhenIWork users without being logged in
+app.get('/api/wheniwork-credentials-public', async (req, res) => {
+  try {
+    // Return credentials from environment variables
+    const credentials = {
+      apiKey: process.env.WHENIWORK_API_KEY || '',
+      email: process.env.WHENIWORK_EMAIL || '',
+      password: process.env.WHENIWORK_PASSWORD || ''
+    };
+
+    // Check if credentials are configured
+    if (!credentials.apiKey || !credentials.email || !credentials.password) {
+      console.warn('WhenIWork credentials not fully configured in environment variables');
+      return res.status(503).json({
+        error: 'WhenIWork credentials not configured on server',
+        configured: false
+      });
+    }
+
+    res.json(credentials);
+
+  } catch (error) {
+    console.error('Error retrieving WhenIWork credentials:', error);
+    res.status(500).json({ error: 'Failed to retrieve credentials' });
+  }
+});
+
 // Debug endpoint to see raw HTML
 app.get('/api/debug-calendar', async (req, res) => {
   try {
