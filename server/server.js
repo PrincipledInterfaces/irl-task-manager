@@ -283,12 +283,13 @@ app.get('/api/quarter-dates', async (req, res) => {
       'Summer': 'SUMMER'
     };
 
-    // Extract year from academic year string (e.g., "2025-2026" -> "2025" for autumn, "2026" for others)
-    const [startYear, endYear] = targetYear.split('-');
+    // Extract start year from academic year string (e.g., "2025-2026" -> "2025")
+    // All quarters in an academic year use the start year in their naming
+    const [startYear] = targetYear.split('-');
 
     Object.entries(quarterMap).forEach(([quarterName, abbrev]) => {
-      // Autumn quarter uses the start year, others use the end year
-      const year = quarterName === 'Autumn' ? startYear : endYear;
+      // All quarters use the academic year start year (e.g., for 2025-2026, all quarters are named with 2025)
+      const year = startYear;
 
       // Look for begin pattern with flexible matching
       // Matches: "BEGIN AQ2025 ALL CLASSES", "Begin SQ2026 Day & Evening Classes", "BEGIN SUMMER 2026 TERM"
