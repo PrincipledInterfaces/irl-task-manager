@@ -1,0 +1,35 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Export Data</title>
+    <link rel="stylesheet" href="styles.css">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.1/css/all.min.css">
+    <link rel="icon" type="image/png" href="head.png">
+</head>
+<body>
+    <main class="container">
+        <div style="display: flex; justify-content: space-between; align-items: center;">
+            <h1>CSV Exporter</h1>
+            <div style="display: flex; gap: 10px;">
+                <button onclick="history.back()" style="background-color: rgb(255, 93, 93); border-color: rgb(255, 93, 93);"><i class="fa-solid fa-rotate-left"></i> Exit</button>
+            </div>
+        </div><br>
+        <div id="hideme">
+            <article id="">
+                <h5>Data</h5>
+                <select id="exportDataType">
+                    <option value="tasks">Tasks</option>
+                    <option value="users">Users</option>
+                </select>
+                <hr>
+                <div style="text-align: center;">
+                    <button id="exportBtn"><i class="fa-solid fa-file-export"></i> Export to CSV</button>
+                </div>
+            </article>
+        </div>
+    </main>
+    <script type="module" src="export.js"></script>
+</body>
+</html>
