@@ -618,6 +618,31 @@ async function removeUserFromTask(taskId) {
             allTasks[taskIndex].wiwShiftIDs = wiwShiftIDs;
         }
 
+        // Send Slack notification
+        try {
+            const idToken = await auth.currentUser.getIdToken();
+            await fetch(getApiUrl('notify/task-unclaimed'), {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json',
+                    'Authorization': `Bearer ${idToken}`
+                },
+                body: JSON.stringify({
+                    taskData: {
+                        title: task.title,
+                        hours: task.hours,
+                        due: task.due
+                    },
+                    userData: {
+                        email: selectedUser.email,
+                        fullName: selectedUser.fullName
+                    }
+                })
+            });
+        } catch (slackError) {
+            console.warn('Slack notification failed (non-critical):', slackError);
+        }
+
         // Re-open the dialog to refresh the task list
         openUserDialog(selectedUser.id);
 

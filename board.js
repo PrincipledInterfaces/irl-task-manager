@@ -1,7 +1,7 @@
 import { auth, db } from './firebase-config.js';
 import { onAuthStateChanged } from "https://www.gstatic.com/firebasejs/12.6.0/firebase-auth.js";
 import { collection, getDocs, doc, getDoc, updateDoc, arrayUnion, arrayRemove } from "https://www.gstatic.com/firebasejs/12.6.0/firebase-firestore.js";
-import { getPageUrl } from './utils.js';
+import { getPageUrl, getApiUrl } from './utils.js';
 import { initialize as initializeWhenIWork, createWIWShift, deleteWIWShift } from './wheniwork.js';
 import { fadeIn, fadeInStagger } from './animations.js';
 
@@ -411,6 +411,31 @@ async function handleClaim(event) {
 
         if (!currentUser.assignedJobIds) currentUser.assignedJobIds = [];
         currentUser.assignedJobIds.push(taskId);
+
+        // Send Slack notification
+        try {
+            const idToken = await auth.currentUser.getIdToken();
+            await fetch(getApiUrl('notify/task-assigned'), {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json',
+                    'Authorization': `Bearer ${idToken}`
+                },
+                body: JSON.stringify({
+                    taskData: {
+                        title: task.title,
+                        hours: task.hours,
+                        due: task.due
+                    },
+                    userData: {
+                        email: currentUser.email,
+                        fullName: currentUser.fullName
+                    }
+                })
+            });
+        } catch (slackError) {
+            console.warn('Slack notification failed (non-critical):', slackError);
+        }
 
         // Re-render the board to show updated state
         renderBoard();
