@@ -385,9 +385,19 @@ async function getScheduledQuarter() {
             const shift = user.shifts[j];
             const shiftDate = new Date(shift.start_time);
 
-            if ((shiftDate >= quarterStart && shiftDate < quarterEnd) && (!shift.notes || !shift.notes.includes('(Created via IRL Task Manager'))) {
-                console.log(`User ${user.first_name} ${user.last_name} has a shift on ${shiftDate}`);
+            // Check if this is a task manager shift (exclude from counting)
+            const isTaskManagerShift = shift.notes && shift.notes.includes('(Created via IRL Task Manager');
+
+            // Check if shift is in current quarter
+            const isInQuarter = shiftDate >= quarterStart && shiftDate < quarterEnd;
+
+            if (isInQuarter && !isTaskManagerShift) {
+                console.log(`[✓ COUNTED] User ${user.first_name} ${user.last_name} has a shift on ${shiftDate.toLocaleString()} (${shift.hours} hrs) - IN current quarter`);
                 hoursToAdd += shift.hours;
+            } else if (isInQuarter && isTaskManagerShift) {
+                console.log(`[✗ SKIPPED] User ${user.first_name} ${user.last_name} has a shift on ${shiftDate.toLocaleString()} - IN quarter but is Task Manager shift`);
+            } else if (!isInQuarter && !isTaskManagerShift) {
+                console.log(`[✗ SKIPPED] User ${user.first_name} ${user.last_name} has a shift on ${shiftDate.toLocaleString()} - OUTSIDE current quarter (${shiftDate < quarterStart ? 'before' : 'after'})`);
             }
         }
     }
