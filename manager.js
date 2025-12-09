@@ -1324,7 +1324,9 @@ function openTaskDialog(taskId) {
 
     // Set category after dialog is shown to ensure select element is rendered
     if (taskId && selectedTask) {
-        document.getElementById('taskCategory').value = selectedTask.category || 'other';
+        // Convert category to lowercase to match dropdown values
+        const categoryLower = (selectedTask.category || 'Other').toLowerCase();
+        document.getElementById('taskCategory').value = categoryLower;
     } else {
         document.getElementById('taskCategory').value = 'other';
     }

@@ -261,6 +261,18 @@ function renderJobCard(task) {
         return ''; // Don't render completed jobs
     }
 
+    // Check if task is nonflexible and past due date (with 12-hour grace period)
+    if (task.nonflexible && task.due) {
+        const dueDate = task.due.toDate ? task.due.toDate() : new Date(task.due);
+        const now = new Date();
+        const gracePeriodMs = 12 * 60 * 60 * 1000; // 12 hours in milliseconds
+        const gracePeriodEnd = new Date(dueDate.getTime() + gracePeriodMs);
+
+        if (now > gracePeriodEnd) {
+            return ''; // Don't render tasks past grace period
+        }
+    }
+
     const workerSlots = task.workerSlots || 1;
     const assignedUsers = task.assignedTo || [];
     const assignedNames = task.assignedToNames || [];

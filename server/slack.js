@@ -135,7 +135,13 @@ async function sendTaskNotification(eventType, taskData, userData, additionalDat
 
     switch (eventType) {
       case 'task-assigned':
-        message = `${userMention} You've been assigned to task: *${taskData.title}* (${taskData.hours || 0} hours${taskData.due ? `, due ${new Date(taskData.due).toLocaleDateString()}` : ''})`;
+        // Convert Firestore Timestamp to Date if needed
+        let dueDateStr = '';
+        if (taskData.due) {
+          const dueDate = taskData.due.toDate ? taskData.due.toDate() : (taskData.due._seconds ? new Date(taskData.due._seconds * 1000) : new Date(taskData.due));
+          dueDateStr = `, due ${dueDate.toLocaleDateString()}`;
+        }
+        message = `${userMention} You've been assigned to task: *${taskData.title}* (${taskData.hours || 0} hours${dueDateStr})`;
         break;
 
       case 'task-unclaimed':
