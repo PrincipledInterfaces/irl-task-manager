@@ -1463,6 +1463,11 @@ async function saveTask() {
             return;
         }
 
+        if (!dueDateValue) {
+            alert('Please select a due date for the task');
+            return;
+        }
+
         // Map category to icon based on data&color guidelines
         const categoryIconMap = {
             workshop: 'hammer',

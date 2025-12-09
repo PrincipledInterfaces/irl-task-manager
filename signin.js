@@ -51,6 +51,7 @@ document.getElementById("loginPassword").addEventListener("input", toggleLoginBu
 document.getElementById("signupEmail").addEventListener("input", toggleSignupButton);
 document.getElementById("signupPassword").addEventListener("input", toggleSignupButton);
 document.getElementById("signupFullName").addEventListener("input", toggleSignupButton);
+document.getElementById("signupHireDate").addEventListener("input", toggleSignupButton);
 document.getElementById("wiwUserSearch").addEventListener("input", handleWiwSearch);
 
 function toggleLoginButton() {
@@ -64,7 +65,8 @@ function toggleSignupButton() {
     const password = document.getElementById("signupPassword").value;
     const fullName = document.getElementById("signupFullName").value;
     const wiwUserId = document.getElementById("selectedWiwUserId").value;
-    signupButton.disabled = !(email && password && fullName && wiwUserId);
+    const hireDate = document.getElementById("signupHireDate").value;
+    signupButton.disabled = !(email && password && fullName && wiwUserId && hireDate);
 }
 
 // Search WhenIWork users as user types
@@ -141,11 +143,12 @@ signupButton.addEventListener("click", async function() {
     const password = document.getElementById("signupPassword").value;
     const fullName = document.getElementById("signupFullName").value;
     const wiwUserId = document.getElementById("selectedWiwUserId").value;
-    console.log("Attempting signup with email:", email, "name:", fullName, "WIW ID:", wiwUserId);
-    await createAccount(email, password, fullName, wiwUserId);
+    const hireDate = document.getElementById("signupHireDate").value;
+    console.log("Attempting signup with email:", email, "name:", fullName, "WIW ID:", wiwUserId, "Hire Date:", hireDate);
+    await createAccount(email, password, fullName, wiwUserId, hireDate);
 });
 
-async function createAccount(email, password, fullName, wiwUserId) {
+async function createAccount(email, password, fullName, wiwUserId, hireDate) {
     try {
         console.log("Step 1: Creating Firebase Auth account...");
         // STEP 1: Create auth account
@@ -161,9 +164,10 @@ async function createAccount(email, password, fullName, wiwUserId) {
             role: "user",  // Default to user, managers set manually in Firebase Console
             assignedJobIds: [],
             allowedHours: 25,
-            wiwUserId: parseInt(wiwUserId)  // Store WhenIWork user ID
+            wiwUserId: parseInt(wiwUserId),  // Store WhenIWork user ID
+            hireDate: hireDate  // Store hire date (MM/DD format)
         });
-        console.log("Firestore document created successfully with WIW ID:", wiwUserId);
+        console.log("Firestore document created successfully with WIW ID:", wiwUserId, "and hire date:", hireDate);
 
         console.log("Account created successfully!");
         alert("Account created successfully! Please sign in.");
