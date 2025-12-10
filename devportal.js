@@ -141,11 +141,40 @@ function updateVersionDisplay() {
 
 // Setup all event listeners
 function setupEventListeners() {
+    console.log("Setting up event listeners...");
+
     // Version increment buttons
-    document.getElementById('incrementPatch').addEventListener('click', () => openVersionDialog('patch'));
-    document.getElementById('incrementMinor').addEventListener('click', () => openVersionDialog('minor'));
-    document.getElementById('incrementMajor').addEventListener('click', () => openVersionDialog('major'));
-    document.getElementById('setManualVersion').addEventListener('click', setManualVersion);
+    const patchBtn = document.getElementById('incrementPatch');
+    const minorBtn = document.getElementById('incrementMinor');
+    const majorBtn = document.getElementById('incrementMajor');
+    const manualBtn = document.getElementById('setManualVersion');
+
+    console.log("Button elements found:", { patchBtn, minorBtn, majorBtn, manualBtn });
+
+    if (patchBtn) {
+        patchBtn.addEventListener('click', () => {
+            console.log("Patch button clicked");
+            openVersionDialog('patch');
+        });
+    }
+    if (minorBtn) {
+        minorBtn.addEventListener('click', () => {
+            console.log("Minor button clicked");
+            openVersionDialog('minor');
+        });
+    }
+    if (majorBtn) {
+        majorBtn.addEventListener('click', () => {
+            console.log("Major button clicked");
+            openVersionDialog('major');
+        });
+    }
+    if (manualBtn) {
+        manualBtn.addEventListener('click', () => {
+            console.log("Manual version button clicked");
+            setManualVersion();
+        });
+    }
 
     // Dialog controls
     const dialog = document.getElementById('versionUpdateDialog');
@@ -154,9 +183,15 @@ function setupEventListeners() {
         closeButton.addEventListener('click', () => dialog.close());
     }
 
-    document.getElementById('addBugFix').addEventListener('click', addBugFixInput);
-    document.getElementById('addFeature').addEventListener('click', addFeatureInput);
-    document.getElementById('publishVersion').addEventListener('click', publishVersion);
+    const addBugFixBtn = document.getElementById('addBugFix');
+    const addFeatureBtn = document.getElementById('addFeature');
+    const publishBtn = document.getElementById('publishVersion');
+
+    if (addBugFixBtn) addBugFixBtn.addEventListener('click', addBugFixInput);
+    if (addFeatureBtn) addFeatureBtn.addEventListener('click', addFeatureInput);
+    if (publishBtn) publishBtn.addEventListener('click', publishVersion);
+
+    console.log("Event listeners setup complete");
 }
 
 // Increment version number
@@ -183,21 +218,35 @@ function incrementVersion(currentVersion, type) {
 
 // Open version update dialog
 function openVersionDialog(incrementType) {
-    const dialog = document.getElementById('versionUpdateDialog');
-    const newVersion = incrementVersion(versionData.version, incrementType);
+    console.log("openVersionDialog called with type:", incrementType);
+    console.log("versionData:", versionData);
 
-    document.getElementById('newVersionNumber').textContent = `v${newVersion}`;
-    document.getElementById('versionMessage').value = '';
+    try {
+        const dialog = document.getElementById('versionUpdateDialog');
+        if (!dialog) {
+            console.error("Dialog element not found!");
+            return;
+        }
 
-    // Set first name only
-    const firstName = currentUser.fullName ? currentUser.fullName.split(' ')[0] : '';
-    document.getElementById('devName').value = firstName;
+        const newVersion = incrementVersion(versionData.version, incrementType);
+        console.log("New version calculated:", newVersion);
 
-    // Reset bug fixes and features lists
-    document.getElementById('bugFixesList').innerHTML = '<input type="text" class="bugfix-input" placeholder="Fixed issue where...">';
-    document.getElementById('featuresList').innerHTML = '<input type="text" class="feature-input" placeholder="Added new feature...">';
+        document.getElementById('newVersionNumber').textContent = `v${newVersion}`;
+        document.getElementById('versionMessage').value = '';
 
-    dialog.showModal();
+        // Set first name only
+        const firstName = currentUser.fullName ? currentUser.fullName.split(' ')[0] : '';
+        document.getElementById('devName').value = firstName;
+
+        // Reset bug fixes and features lists
+        document.getElementById('bugFixesList').innerHTML = '<input type="text" class="bugfix-input" placeholder="Fixed issue where...">';
+        document.getElementById('featuresList').innerHTML = '<input type="text" class="feature-input" placeholder="Added new feature...">';
+
+        console.log("Opening dialog...");
+        dialog.showModal();
+    } catch (error) {
+        console.error("Error in openVersionDialog:", error);
+    }
 }
 
 // Set manual version
