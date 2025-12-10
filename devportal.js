@@ -33,9 +33,10 @@ onAuthStateChanged(auth, async (user) => {
             await loadAllReports();
             await loadAllUsers();
 
-            // Render UI
-            renderVersionSection();
-            renderReportsSection();
+            // Update UI with data
+            updateVersionDisplay();
+            updateReportsDisplay();
+            setupEventListeners();
 
         }
     } else {
@@ -114,72 +115,45 @@ async function loadAllUsers() {
     }
 }
 
-// Render version management section
-function renderVersionSection() {
-    const container = document.querySelector('main .container');
+// Update version display with loaded data
+function updateVersionDisplay() {
+    console.log("updateVersionDisplay called, versionData:", versionData);
 
-    const versionHTML = `
-        <article>
-            <h2>Version Management</h2>
-            <h3>Current Version: <span class="badge badge-blue"><i class="fa-solid fa-code-fork"></i> v${versionData.version}</span></h3>
-            <hr>
-            <div style="display: flex; gap: 10px; flex-wrap: wrap; margin-bottom: 1rem;">
-                <button id="incrementPatch" class="secondary"><i class="fa-solid fa-plus"></i> Minor Fix (0.0.x)</button>
-                <button id="incrementMinor" class="secondary"><i class="fa-solid fa-plus"></i> Larger Update (0.x.0)</button>
-                <button id="incrementMajor" class="secondary"><i class="fa-solid fa-plus"></i> Overhaul (x.0.0)</button>
-            </div>
-            <details>
-                <summary>Manually set version</summary>
-                <div style="display: flex; gap: 10px; align-items: center; margin-top: 0.5rem;">
-                    <input type="text" id="manualVersion" placeholder="e.g., 2.1.3" pattern="[0-9]+\\.[0-9]+\\.[0-9]+" style="max-width: 200px;">
-                    <button id="setManualVersion">Set Version</button>
-                </div>
-            </details>
-        </article>
+    const currentVersionSpan = document.getElementById('currentVersion');
+    if (currentVersionSpan && versionData && versionData.version) {
+        console.log("Setting version to:", versionData.version);
+        currentVersionSpan.textContent = versionData.version;
+    } else {
+        console.warn("Could not update version display:", {
+            spanExists: !!currentVersionSpan,
+            versionDataExists: !!versionData,
+            version: versionData?.version
+        });
+    }
 
-        <dialog id="versionUpdateDialog">
-            <article>
-                <header>
-                    <button aria-label="Close" rel="prev"></button>
-                    <p><strong>Publish Version Update</strong></p>
-                </header>
-                <h2>New Version: <span id="newVersionNumber">v1.0.0</span></h2>
-                <hr>
-                <label for="versionMessage"><strong>Update Message:</strong></label>
-                <textarea id="versionMessage" rows="4" placeholder="Brief message about this update..."></textarea>
-                <hr>
-                <label for="devName"><strong>Your Name:</strong></label>
-                <input type="text" id="devName" placeholder="Developer Name" value="${currentUser.fullName}">
-                <hr>
-                <h4><i class="badge badge-red fa-solid fa-bug-slash"></i> Bug Fixes:</h4>
-                <div id="bugFixesList">
-                    <input type="text" class="bugfix-input" placeholder="Fixed issue where...">
-                </div>
-                <button id="addBugFix" class="secondary" style="margin-top: 0.5rem;"><i class="fa-solid fa-plus"></i> Add Bug Fix</button>
-                <hr>
-                <h4><i class="badge badge-green fa-solid fa-microchip"></i> New Features:</h4>
-                <div id="featuresList">
-                    <input type="text" class="feature-input" placeholder="Added new feature...">
-                </div>
-                <button id="addFeature" class="secondary" style="margin-top: 0.5rem;"><i class="fa-solid fa-plus"></i> Add Feature</button>
-                <hr>
-                <footer>
-                    <button id="publishVersion"><i class="fa-solid fa-rocket"></i> Publish Version</button>
-                </footer>
-            </article>
-        </dialog>
-    `;
+    // Pre-fill developer name in dialog (first name only)
+    const devNameInput = document.getElementById('devName');
+    if (devNameInput && currentUser && currentUser.fullName) {
+        const firstName = currentUser.fullName.split(' ')[0];
+        devNameInput.value = firstName;
+    }
+}
 
-    container.insertAdjacentHTML('beforeend', versionHTML);
-
-    // Setup event listeners
+// Setup all event listeners
+function setupEventListeners() {
+    // Version increment buttons
     document.getElementById('incrementPatch').addEventListener('click', () => openVersionDialog('patch'));
     document.getElementById('incrementMinor').addEventListener('click', () => openVersionDialog('minor'));
     document.getElementById('incrementMajor').addEventListener('click', () => openVersionDialog('major'));
     document.getElementById('setManualVersion').addEventListener('click', setManualVersion);
 
+    // Dialog controls
     const dialog = document.getElementById('versionUpdateDialog');
-    dialog.querySelector('button[aria-label="Close"]').addEventListener('click', () => dialog.close());
+    const closeButton = document.getElementById('closeVersionDialog');
+    if (closeButton) {
+        closeButton.addEventListener('click', () => dialog.close());
+    }
+
     document.getElementById('addBugFix').addEventListener('click', addBugFixInput);
     document.getElementById('addFeature').addEventListener('click', addFeatureInput);
     document.getElementById('publishVersion').addEventListener('click', publishVersion);
@@ -214,7 +188,10 @@ function openVersionDialog(incrementType) {
 
     document.getElementById('newVersionNumber').textContent = `v${newVersion}`;
     document.getElementById('versionMessage').value = '';
-    document.getElementById('devName').value = currentUser.fullName;
+
+    // Set first name only
+    const firstName = currentUser.fullName ? currentUser.fullName.split(' ')[0] : '';
+    document.getElementById('devName').value = firstName;
 
     // Reset bug fixes and features lists
     document.getElementById('bugFixesList').innerHTML = '<input type="text" class="bugfix-input" placeholder="Fixed issue where...">';
@@ -238,7 +215,10 @@ function setManualVersion() {
     const dialog = document.getElementById('versionUpdateDialog');
     document.getElementById('newVersionNumber').textContent = `v${version}`;
     document.getElementById('versionMessage').value = '';
-    document.getElementById('devName').value = currentUser.fullName;
+
+    // Set first name only
+    const firstName = currentUser.fullName ? currentUser.fullName.split(' ')[0] : '';
+    document.getElementById('devName').value = firstName;
 
     // Reset bug fixes and features lists
     document.getElementById('bugFixesList').innerHTML = '<input type="text" class="bugfix-input" placeholder="Fixed issue where...">';
@@ -316,9 +296,9 @@ async function publishVersion() {
         versionData.versionBugFixes = bugFixes;
         versionData.versionFeatures = features;
 
-        // Close dialog and refresh
+        // Close dialog and refresh display
         document.getElementById('versionUpdateDialog').close();
-        renderVersionSection();
+        updateVersionDisplay();
 
         alert(`Version ${newVersion} published successfully!`);
 
@@ -328,50 +308,41 @@ async function publishVersion() {
     }
 }
 
-// Render reports section
-function renderReportsSection() {
-    const container = document.querySelector('main .container');
-
+// Update reports display with loaded data
+function updateReportsDisplay() {
     const activeReports = allReports.filter(r => !r.completed);
     const completedReports = allReports.filter(r => r.completed);
 
-    let reportsHTML = `
-        <article style="margin-top: 2rem;">
-            <h2>Bug Reports & Feature Requests</h2>
-            <h5>${activeReports.length} active request${activeReports.length !== 1 ? 's' : ''}</h5>
-            <hr>
-    `;
-
-    if (activeReports.length === 0) {
-        reportsHTML += '<p style="color: #888;">No active reports.</p>';
-    } else {
-        activeReports.forEach(report => {
-            reportsHTML += renderReportCard(report, false);
-        });
+    // Update active reports count
+    const activeReportsCount = document.getElementById('activeReportsCount');
+    if (activeReportsCount) {
+        activeReportsCount.textContent = `${activeReports.length} active request${activeReports.length !== 1 ? 's' : ''}`;
     }
+
+    // Update active reports list
+    const activeReportsList = document.getElementById('activeReportsList');
+    if (activeReportsList) {
+        if (activeReports.length === 0) {
+            activeReportsList.innerHTML = '<p style="color: #888;">No active reports.</p>';
+        } else {
+            activeReportsList.innerHTML = activeReports.map(report => renderReportCard(report, false)).join('');
+        }
+    }
+
+    // Update completed reports section
+    const completedReportsSection = document.getElementById('completedReportsSection');
+    const completedReportsCount = document.getElementById('completedReportsCount');
+    const completedReportsList = document.getElementById('completedReportsList');
 
     if (completedReports.length > 0) {
-        reportsHTML += `
-            <details style="margin-top: 2rem;">
-                <summary><h4 style="display: inline;">Completed Requests (${completedReports.length})</h4></summary>
-                <div style="margin-top: 1rem;">
-        `;
-
-        completedReports.forEach(report => {
-            reportsHTML += renderReportCard(report, true);
-        });
-
-        reportsHTML += `
-                </div>
-            </details>
-        `;
+        if (completedReportsSection) completedReportsSection.style.display = 'block';
+        if (completedReportsCount) completedReportsCount.textContent = completedReports.length;
+        if (completedReportsList) {
+            completedReportsList.innerHTML = completedReports.map(report => renderReportCard(report, true)).join('');
+        }
+    } else {
+        if (completedReportsSection) completedReportsSection.style.display = 'none';
     }
-
-    reportsHTML += `
-        </article>
-    `;
-
-    container.insertAdjacentHTML('beforeend', reportsHTML);
 
     // Attach event listeners for mark complete/uncomplete buttons
     document.querySelectorAll('.toggle-report-btn').forEach(btn => {
@@ -433,11 +404,9 @@ async function toggleReportStatus(reportId) {
         report.completed = newStatus;
         report.completedAt = updateData.completedAt;
 
-        // Refresh reports section
-        const reportsArticle = document.querySelector('main .container article:last-child');
-        reportsArticle.remove();
+        // Refresh reports display
         await loadAllReports();
-        renderReportsSection();
+        updateReportsDisplay();
 
     } catch (error) {
         console.error('Error toggling report status:', error);

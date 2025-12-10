@@ -18,7 +18,73 @@
         </div>
         <br>
 
-        <!-- Version management and reports will be rendered here by devportal.js -->
+        <!-- Version Management Section -->
+        <article>
+            <h2>Version Management</h2>
+            <h3>Current Version: <span class="badge badge-blue"><i class="fa-solid fa-code-fork"></i> v<span id="currentVersion">1.0.0</span></span></h3>
+            <hr>
+            <div style="display: flex; gap: 10px; flex-wrap: wrap; margin-bottom: 1rem;">
+                <button id="incrementPatch" class="secondary"><i class="fa-solid fa-plus"></i> Minor Fix (0.0.x)</button>
+                <button id="incrementMinor" class="secondary"><i class="fa-solid fa-plus"></i> Larger Update (0.x.0)</button>
+                <button id="incrementMajor" class="secondary"><i class="fa-solid fa-plus"></i> Overhaul (x.0.0)</button>
+            </div>
+            <details>
+                <summary>Manually set version</summary>
+                <div style="display: flex; gap: 10px; align-items: center; margin-top: 0.5rem;">
+                    <input type="text" id="manualVersion" placeholder="e.g., 2.1.3" pattern="[0-9]+\.[0-9]+\.[0-9]+" style="max-width: 200px;">
+                    <button id="setManualVersion">Set Version</button>
+                </div>
+            </details>
+        </article>
+
+        <!-- Bug Reports & Feature Requests Section -->
+        <article style="margin-top: 2rem;">
+            <h2>Bug Reports & Feature Requests</h2>
+            <h5 id="activeReportsCount">Loading...</h5>
+            <hr>
+            <div id="activeReportsList">
+                <!-- Active reports will be populated here -->
+            </div>
+            <details id="completedReportsSection" style="margin-top: 2rem; display: none;">
+                <summary><h4 style="display: inline;">Completed Requests (<span id="completedReportsCount">0</span>)</h4></summary>
+                <div id="completedReportsList" style="margin-top: 1rem;">
+                    <!-- Completed reports will be populated here -->
+                </div>
+            </details>
+        </article>
+
+        <!-- Version Update Dialog -->
+        <dialog id="versionUpdateDialog">
+            <article>
+                <header>
+                    <button aria-label="Close" rel="prev" id="closeVersionDialog"></button>
+                    <p><strong>Publish Version Update</strong></p>
+                </header>
+                <h2>New Version: <span id="newVersionNumber">v1.0.0</span></h2>
+                <hr>
+                <label for="versionMessage"><strong>Update Message:</strong></label>
+                <textarea id="versionMessage" rows="4" placeholder="Brief message about this update..."></textarea>
+                <hr>
+                <label for="devName"><strong>Your Name:</strong></label>
+                <input type="text" id="devName" placeholder="Developer Name">
+                <hr>
+                <h4><i class="badge badge-red fa-solid fa-bug-slash"></i> Bug Fixes:</h4>
+                <div id="bugFixesList">
+                    <input type="text" class="bugfix-input" placeholder="Fixed issue where...">
+                </div>
+                <button id="addBugFix" class="secondary" style="margin-top: 0.5rem;"><i class="fa-solid fa-plus"></i> Add Bug Fix</button>
+                <hr>
+                <h4><i class="badge badge-green fa-solid fa-microchip"></i> New Features:</h4>
+                <div id="featuresList">
+                    <input type="text" class="feature-input" placeholder="Added new feature...">
+                </div>
+                <button id="addFeature" class="secondary" style="margin-top: 0.5rem;"><i class="fa-solid fa-plus"></i> Add Feature</button>
+                <hr>
+                <footer>
+                    <button id="publishVersion"><i class="fa-solid fa-rocket"></i> Publish Version</button>
+                </footer>
+            </article>
+        </dialog>
 
     </main>
     <script type="module" src="devportal.js"></script>
