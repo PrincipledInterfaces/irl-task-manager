@@ -65,17 +65,24 @@ export function showReportDialog(currentUser) {
         }
 
         try {
-            // Submit report to Firestore
-            await addDoc(collection(db, "reports"), {
+            // Build the report data object
+            const reportData = {
                 title,
                 type,
                 body,
                 includeName,
-                submitterName: currentUser.fullName,
-                submitterEmail: currentUser.email,
                 createdAt: Timestamp.fromDate(new Date()),
                 completed: false
-            });
+            };
+
+            // Only add name and email if user wants to include it
+            if (includeName) {
+                reportData.submitterName = currentUser.fullName;
+                reportData.submitterEmail = currentUser.email;
+            }
+
+            // Submit report to Firestore
+            await addDoc(collection(db, "reports"), reportData);
 
             // Send Slack notification to all devs
             await sendDevNotification(type);
