@@ -51,11 +51,20 @@ async function loadVersionData() {
         const dataCollection = collection(db, "data");
         const dataSnapshot = await getDocs(dataCollection);
 
-        if (!dataSnapshot.empty) {
-            const dataDoc = dataSnapshot.docs[0];
+        // Find the document that has version info (not budget info)
+        let versionDoc = null;
+        for (const doc of dataSnapshot.docs) {
+            const data = doc.data();
+            if (data.version !== undefined) {
+                versionDoc = doc;
+                break;
+            }
+        }
+
+        if (versionDoc) {
             versionData = {
-                id: dataDoc.id,
-                ...dataDoc.data()
+                id: versionDoc.id,
+                ...versionDoc.data()
             };
             console.log("Version data loaded:", versionData);
         } else {
@@ -76,6 +85,7 @@ async function loadVersionData() {
                 versionBugFixes: [],
                 versionFeatures: []
             };
+            console.log("Created default version data:", versionData);
         }
     } catch (error) {
         console.error("Error loading version data:", error);
