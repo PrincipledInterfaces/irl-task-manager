@@ -162,6 +162,21 @@ async function sendTaskNotification(eventType, taskData, userData, additionalDat
         message = `${mentionString}Task completed: *${taskData.title}* by ${userMention}`;
         break;
 
+      case 'new-report':
+        // Notify all developers about new bug report or feature request
+        const developers = additionalData.developers || [];
+        const devMentions = [];
+
+        for (const dev of developers) {
+          const slackDevInfo = await findSlackUser(dev.email, dev.fullName);
+          devMentions.push(slackDevInfo.mention);
+        }
+
+        const devMentionString = devMentions.length > 0 ? devMentions.join(' ') + ' ' : '';
+        const reportType = additionalData.reportType === 'bug' ? 'bug report' : 'feature request';
+        message = `${devMentionString}New ${reportType} received!`;
+        break;
+
       default:
         message = `Task update: *${taskData.title}*`;
     }

@@ -4,6 +4,7 @@ import { collection, getDocs, doc, getDoc, updateDoc, arrayUnion, arrayRemove } 
 import { getPageUrl, getApiUrl } from './utils.js';
 import { initialize as initializeWhenIWork, createWIWShift, deleteWIWShift } from './wheniwork.js';
 import { fadeIn, fadeInStagger } from './animations.js';
+import { checkAndShowVersionPopup } from './version-check.js';
 
 let currentUser = null;
 let tasksData = [];
@@ -54,6 +55,9 @@ onAuthStateChanged(auth, async (user) => {
             await loadTasks();
             setupTaskFilters();
             renderBoard();
+
+            // Check and show version popup if needed
+            await checkAndShowVersionPopup(currentUser);
         }
     } else {
         // No user logged in, redirect to signin

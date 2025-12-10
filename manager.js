@@ -4,6 +4,8 @@ import { collection, getDocs, doc, getDoc, updateDoc, arrayUnion, arrayRemove, a
 import { getPageUrl, getApiUrl } from './utils.js';
 import { initialize as initializeWhenIWork, getScheduledHours, createWIWShift, deleteWIWShift } from './wheniwork.js';
 import { fadeIn, fadeInStagger } from './animations.js';
+import { checkAndShowVersionPopup } from './version-check.js';
+import { showReportDialog } from './report-utils.js';
 
 let currentUser = null;
 let allUsers = [];
@@ -76,6 +78,9 @@ onAuthStateChanged(auth, async (user) => {
             // Setup logout button
             setupLogoutButton();
 
+            // Setup report button
+            setupReportButton();
+
             // Setup tab switching
             setupTabs();
 
@@ -93,6 +98,9 @@ onAuthStateChanged(auth, async (user) => {
 
             // Render hours
             await renderHours();
+
+            // Check and show version popup if needed
+            await checkAndShowVersionPopup(currentUser);
         }
     } else {
         window.location.href = getPageUrl("signin");
@@ -110,6 +118,16 @@ function setupLogoutButton() {
                 console.error("Error signing out:", error);
                 alert("Error signing out: " + error.message);
             }
+        });
+    }
+}
+
+// Setup report button functionality
+function setupReportButton() {
+    const reportButton = document.getElementById('reportButton');
+    if (reportButton) {
+        reportButton.addEventListener('click', () => {
+            showReportDialog(currentUser);
         });
     }
 }

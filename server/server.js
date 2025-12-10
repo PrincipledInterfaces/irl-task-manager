@@ -736,6 +736,52 @@ app.post('/api/notify/task-completed', async (req, res) => {
   }
 });
 
+// Notify when a new bug report or feature request is submitted
+app.post('/api/notify/new-report', async (req, res) => {
+  try {
+    // Get the ID token from the Authorization header
+    const authHeader = req.headers.authorization;
+    if (!authHeader || !authHeader.startsWith('Bearer ')) {
+      return res.status(401).json({ error: 'Unauthorized - No token provided' });
+    }
+
+    const idToken = authHeader.split('Bearer ')[1];
+
+    // Verify the ID token
+    let decodedToken;
+    try {
+      decodedToken = await admin.auth().verifyIdToken(idToken);
+    } catch (error) {
+      return res.status(401).json({ error: 'Unauthorized - Invalid token' });
+    }
+
+    // Check if user exists in database
+    const userDoc = await db.collection('users').doc(decodedToken.uid).get();
+    if (!userDoc.exists) {
+      return res.status(403).json({ error: 'Permission denied - User not found in database' });
+    }
+
+    // Get report type and developers list from request
+    const { reportType, developers } = req.body;
+
+    if (!reportType || !developers) {
+      return res.status(400).json({ error: 'reportType and developers are required' });
+    }
+
+    // Send Slack notification to all developers
+    const result = await sendTaskNotification('new-report', {}, {}, { reportType, developers });
+
+    res.json({
+      success: result.success,
+      message: result.message
+    });
+
+  } catch (error) {
+    console.error('Error sending new report notification:', error);
+    res.status(500).json({ error: 'Failed to send notification', details: error.message });
+  }
+});
+
 // Start server
 app.listen(PORT, () => {
   console.log(`IRL Task Manager API server running on port ${PORT}`);

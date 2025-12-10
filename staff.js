@@ -4,6 +4,8 @@ import { collection, getDocs, doc, getDoc, updateDoc, arrayRemove, Timestamp } f
 import { getPageUrl } from './utils.js';
 import { initialize as initializeWhenIWork, getUserById, deleteWIWShift } from './wheniwork.js';
 import { fadeIn, fadeInStagger } from './animations.js';
+import { checkAndShowVersionPopup } from './version-check.js';
+import { showReportDialog } from './report-utils.js';
 
 let currentUser = null;
 let tasksData = [];
@@ -37,12 +39,28 @@ onAuthStateChanged(auth, async (user) => {
 
             // Setup logout button
             setupLogoutButton();
+
+            // Setup report button
+            setupReportButton();
+
+            // Check and show version popup if needed
+            await checkAndShowVersionPopup(currentUser);
         }
     } else {
         // No user logged in, redirect to signin
         window.location.href = getPageUrl("signin");
     }
 });
+
+// Setup report button functionality
+function setupReportButton() {
+    const reportButton = document.getElementById('reportButton');
+    if (reportButton) {
+        reportButton.addEventListener('click', () => {
+            showReportDialog(currentUser);
+        });
+    }
+}
 
 // Setup logout button functionality
 function setupLogoutButton() {
