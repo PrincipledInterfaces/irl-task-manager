@@ -12,7 +12,12 @@
     <main class="container">
         <div style="display: flex; justify-content: space-between; align-items: center;">
             <h1>Board Listings</h1>
-            <a href="staff"><button><i class="fa-solid fa-square-poll-horizontal"></i> My Tasks</button></a>
+            <div style="display: flex; gap: 10px;">
+                <button id="reportButton" class="secondary circle-button"><i class="fa-solid fa-flag"></i></button>
+                <button class="circle-button"><i class="fa-solid fa-cog"></i></button>
+                <a href="staff"><button><i class="fa-solid fa-square-poll-horizontal"></i> My Tasks</button></a>
+                <button style="background-color: rgb(255, 93, 93); border-color: rgb(255, 93, 93);"><i class="fa-solid fa-user"></i> Log Out</button>
+            </div>
         </div>
 
         <!-- Filters Section -->
@@ -96,6 +101,37 @@
             </div>
         </div>
     </main>
+    <dialog id="settingsDialog">
+        <article>
+            <header>
+                <button aria-label="Close" rel="prev" id="closeSettingsDialog"></button>
+                <p>
+                    <strong>Settings</strong>
+                </p>
+            </header>
+            <h5>Visual Options:</h5>
+            <label for="themeSelector">Theme:</label>
+            <select id="themeSelector">
+                <!-- Theme options will be populated by themes.js -->
+            </select>
+
+            <label for="backgroundPatternSelector">Background Pattern:</label>
+            <select id="backgroundPatternSelector" style="background-repeat: repeat; background-size: 50px; padding: 0.75rem;">
+                <!-- Pattern options will be populated by themes.js -->
+            </select>
+
+            <p>*You may need to refresh the page to fully apply changes.</p>
+        </article>
+    </dialog>
+
+    <!-- Loading overlay -->
+    <div id="loadingOverlay" style="display: none; position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: rgba(0, 0, 0, 0.7); z-index: 9999; justify-content: center; align-items: center;">
+        <div style="text-align: center;">
+            <div class="loader"></div>
+            <p style="color: white; margin-top: 1rem; font-size: 1.2rem;">Claiming task...</p>
+        </div>
+    </div>
+
     <script type="module" src="themes.js"></script>
     <script type="module" src="board.js"></script>
 </body>

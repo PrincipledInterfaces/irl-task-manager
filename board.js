@@ -1,10 +1,11 @@
 import { auth, db } from './firebase-config.js';
-import { onAuthStateChanged } from "https://www.gstatic.com/firebasejs/12.6.0/firebase-auth.js";
+import { onAuthStateChanged, signOut } from "https://www.gstatic.com/firebasejs/12.6.0/firebase-auth.js";
 import { collection, getDocs, doc, getDoc, updateDoc, arrayUnion, arrayRemove } from "https://www.gstatic.com/firebasejs/12.6.0/firebase-firestore.js";
 import { getPageUrl, getApiUrl } from './utils.js';
 import { initialize as initializeWhenIWork, createWIWShift, deleteWIWShift } from './wheniwork.js';
 import { fadeIn, fadeInStagger } from './animations.js';
 import { checkAndShowVersionPopup } from './version-check.js';
+import { showReportDialog } from './report-utils.js';
 
 let currentUser = null;
 let tasksData = [];
@@ -55,6 +56,15 @@ onAuthStateChanged(auth, async (user) => {
             await loadTasks();
             setupTaskFilters();
             renderBoard();
+
+            // Setup logout button
+            setupLogoutButton();
+
+            // Setup report button
+            setupReportButton();
+
+            // Setup settings button
+            setupSettingsButton();
 
             // Check and show version popup if needed
             await checkAndShowVersionPopup(currentUser);
@@ -336,6 +346,12 @@ function attachClaimListeners() {
 async function handleClaim(event) {
     const taskId = event.currentTarget.getAttribute('data-job-id');
 
+    // Show loading overlay
+    const loadingOverlay = document.getElementById('loadingOverlay');
+    if (loadingOverlay) {
+        loadingOverlay.style.display = 'flex';
+    }
+
     try {
         const task = tasksData.find(t => t.id === taskId);
         if (!task || !currentUser) {
@@ -448,6 +464,65 @@ async function handleClaim(event) {
     } catch (error) {
         console.error("Error claiming task:", error);
         alert("Error claiming task: " + error.message);
+    } finally {
+        // Hide loading overlay
+        const loadingOverlay = document.getElementById('loadingOverlay');
+        if (loadingOverlay) {
+            loadingOverlay.style.display = 'none';
+        }
+    }
+}
+
+// Setup report button functionality
+function setupReportButton() {
+    const reportButton = document.getElementById('reportButton');
+    if (reportButton) {
+        reportButton.addEventListener('click', () => {
+            showReportDialog(currentUser);
+        });
+    }
+}
+
+// Setup settings button functionality
+function setupSettingsButton() {
+    const settingsButtons = document.querySelectorAll('.circle-button');
+    settingsButtons.forEach(button => {
+        // Find the cog button specifically
+        if (button.innerHTML.includes('fa-cog')) {
+            button.addEventListener('click', () => {
+                const settingsDialog = document.getElementById('settingsDialog');
+                if (settingsDialog) {
+                    settingsDialog.showModal();
+                }
+            });
+        }
+    });
+
+    // Setup close button for settings dialog
+    const settingsDialog = document.getElementById('settingsDialog');
+    if (settingsDialog) {
+        const closeButton = settingsDialog.querySelector('button[aria-label="Close"]');
+        if (closeButton) {
+            closeButton.addEventListener('click', () => {
+                settingsDialog.close();
+            });
+        }
+    }
+}
+
+// Setup logout button functionality
+function setupLogoutButton() {
+    const logoutButton = document.querySelector('button[style*="rgb(255, 93, 93)"]');
+    if (logoutButton) {
+        logoutButton.addEventListener('click', async () => {
+            try {
+                await signOut(auth);
+                // onAuthStateChanged will automatically redirect to signin.html
+            } catch (error) {
+                console.error("Error signing out:", error);
+                alert("Error signing out: " + error.message);
+            }
+        });
     }
 }
 

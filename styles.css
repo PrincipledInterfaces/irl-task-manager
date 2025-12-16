@@ -4,7 +4,7 @@
 /* Optional: Custom theme adjustments */
 :root {
   /* Customize Pico's default rounded corners if desired */
-  --pico-border-radius: 0.5rem;
+  --pico-border-radius: 1rem;
 }
 
 /* Badge/Tag Components - Inline colored text boxes */
@@ -93,9 +93,9 @@ details summary::-webkit-details-marker {
   font-weight: bold;
   text-transform: uppercase;
   color: #0000;
-  -webkit-text-stroke: 1px #000;
-  background: 
-    linear-gradient(90deg,#0000 33%,#000 0 67%,#0000 0) 
+  -webkit-text-stroke: 1px var(--pico-color);
+  background:
+    linear-gradient(90deg,#0000 33%,var(--pico-color) 0 67%,#0000 0)
     0/300% 100% no-repeat text;
   animation: l2 2s linear infinite;
 }
@@ -107,8 +107,7 @@ details summary::-webkit-details-marker {
 }
 
 body {
-  /* load the tile relative to this CSS file, repeat to fill the area */
-  background-image: url('./tile.png');
+  /* Background image will be set dynamically by themes.js */
   background-repeat: repeat;
   background-position: 0 0;
   background-size: auto;
@@ -201,13 +200,12 @@ progress {
   /* 1. Ensure the width and height are equal to create a square base */
   width: 60px;
   height: 60px;
-  
+
   /* 2. Set the border-radius to 50% to turn the square into a circle */
   border-radius: 50%;
-  
+
   /* 3. Optional: Add styling for appearance and centering content */
-  
-  color: white;
+
   border: none;
   text-align: center;
   font-size: 24px;
@@ -230,5 +228,41 @@ progress {
   to {
     transform: rotate(360deg);
   }
+}
+
+/* Tooltip overflow prevention */
+[data-tooltip] {
+  --tooltip-max-width: min(300px, 90vw);
+}
+
+[data-tooltip]::before,
+[data-tooltip]::after {
+  max-width: var(--tooltip-max-width);
+  white-space: normal;
+  word-wrap: break-word;
+}
+
+/* Prevent tooltips from overflowing on the right */
+[data-tooltip][data-placement="top"]::before,
+[data-tooltip][data-placement="top"]::after,
+[data-tooltip]:not([data-placement])::before,
+[data-tooltip]:not([data-placement])::after {
+  left: 50%;
+  transform: translateX(-50%);
+  right: auto;
+}
+
+/* Keep left-placed tooltips in viewport */
+[data-tooltip][data-placement="left"]::before,
+[data-tooltip][data-placement="left"]::after {
+  right: calc(100% + 0.5rem);
+  left: max(0.5rem, auto);
+}
+
+/* Keep right-placed tooltips in viewport */
+[data-tooltip][data-placement="right"]::before,
+[data-tooltip][data-placement="right"]::after {
+  left: calc(100% + 0.5rem);
+  right: max(0.5rem, auto);
 }
 

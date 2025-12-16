@@ -2,6 +2,18 @@ import { auth, db } from './firebase-config.js';
 import { onAuthStateChanged } from "https://www.gstatic.com/firebasejs/12.6.0/firebase-auth.js";
 import { doc, getDoc, updateDoc } from "https://www.gstatic.com/firebasejs/12.6.0/firebase-firestore.js";
 
+// Background pattern definitions
+const BACKGROUND_PATTERNS = {
+    '*Default': './tile.png',
+    'Double Bubble': 'https://www.toptal.com/designers/subtlepatterns/uploads/double-bubble.png',
+    'Double Bubble Outline': 'https://www.toptal.com/designers/subtlepatterns/uploads/double-bubble-outline.png',
+    'Mirrored Squares': 'https://www.transparenttextures.com/patterns/mirrored-squares.png',
+    'Always Grey': 'https://www.transparenttextures.com/patterns/always-grey.png',
+    'Crissxcross': 'https://www.transparenttextures.com/patterns/crissxcross.png',
+    'Black Mamba': 'https://www.transparenttextures.com/patterns/black-mamba.png',
+    'Bright Squares': 'https://www.transparenttextures.com/patterns/bright-squares.png',
+};
+
 // Theme definitions
 const THEMES = {
     'Default Dark': {
@@ -168,6 +180,17 @@ function applyTheme(themeName) {
     }
 }
 
+// Apply background pattern to the page
+function applyBackgroundPattern(patternName) {
+    const patternUrl = BACKGROUND_PATTERNS[patternName];
+    if (patternUrl) {
+        document.body.style.backgroundImage = `url('${patternUrl}')`;
+        console.log(`Background pattern applied: ${patternName}`);
+    } else {
+        console.warn(`Background pattern not found: ${patternName}`);
+    }
+}
+
 // Get user's theme preference from Firestore
 async function getUserThemePreference() {
     const user = auth.currentUser;
@@ -186,6 +209,24 @@ async function getUserThemePreference() {
     }
 }
 
+// Get user's background pattern preference from Firestore
+async function getUserBackgroundPatternPreference() {
+    const user = auth.currentUser;
+    if (!user) return 'Default (Current)'; // Default pattern
+
+    try {
+        const userDoc = await getDoc(doc(db, 'users', user.uid));
+        if (userDoc.exists()) {
+            const userData = userDoc.data();
+            return userData.backgroundPatternPreference || 'Default (Current)';
+        }
+        return 'Default (Current)';
+    } catch (error) {
+        console.error('Error getting background pattern preference:', error);
+        return 'Default (Current)';
+    }
+}
+
 // Save user's theme preference to Firestore
 async function saveUserThemePreference(themeName) {
     const user = auth.currentUser;
@@ -197,6 +238,20 @@ async function saveUserThemePreference(themeName) {
         console.log(`Theme preference saved: ${themeName}`);
     } catch (error) {
         console.error("Error saving theme preference:", error);
+    }
+}
+
+// Save user's background pattern preference to Firestore
+async function saveUserBackgroundPatternPreference(patternName) {
+    const user = auth.currentUser;
+    if (!user) return;
+
+    try {
+        const userRef = doc(db, 'users', user.uid);
+        await updateDoc(userRef, { backgroundPatternPreference: patternName });
+        console.log(`Background pattern preference saved: ${patternName}`);
+    } catch (error) {
+        console.error("Error saving background pattern preference:", error);
     }
 }
 
@@ -217,6 +272,32 @@ function populateThemeSelector() {
     });
 }
 
+// Populate background pattern selector dropdown with visual previews
+function populateBackgroundPatternSelector() {
+    const patternSelector = document.getElementById('backgroundPatternSelector');
+    if (!patternSelector) return;
+
+    // Clear existing options
+    patternSelector.innerHTML = '';
+
+    // Add each pattern as an option with visual preview
+    Object.entries(BACKGROUND_PATTERNS).forEach(([patternName, patternUrl]) => {
+        const option = document.createElement('option');
+        option.value = patternName;
+        option.textContent = patternName;
+        option.style.backgroundImage = `url('${patternUrl}')`;
+        option.style.backgroundRepeat = 'repeat';
+        option.style.backgroundSize = '50px';
+        patternSelector.appendChild(option);
+    });
+
+    // Set style on the select element itself to show preview of selected pattern
+    patternSelector.addEventListener('change', function() {
+        const selectedPattern = BACKGROUND_PATTERNS[this.value];
+        this.style.backgroundImage = `url('${selectedPattern}')`;
+    });
+}
+
 // Initialize theme system
 async function initializeThemes() {
     console.log("Initializing theme system...");
@@ -228,6 +309,9 @@ async function initializeThemes() {
 
     // Populate theme selector if it exists
     populateThemeSelector();
+
+    // Populate background pattern selector if it exists
+    populateBackgroundPatternSelector();
 
     // Wait for auth to be ready
     await new Promise(resolve => {
@@ -246,6 +330,10 @@ async function initializeThemes() {
     const initialTheme = userTheme;
     applyTheme(userTheme);
 
+    // Get and apply user's background pattern preference
+    const userBackgroundPattern = await getUserBackgroundPatternPreference();
+    applyBackgroundPattern(userBackgroundPattern);
+
     // Set the selector to the current theme if it exists
     const themeSelector = document.getElementById('themeSelector');
     if (themeSelector) {
@@ -258,6 +346,22 @@ async function initializeThemes() {
             await saveUserThemePreference(selectedTheme);
             // Reload to apply theme fully
             window.location.reload();
+        });
+    }
+
+    // Set the background pattern selector to the current pattern if it exists
+    const patternSelector = document.getElementById('backgroundPatternSelector');
+    if (patternSelector) {
+        patternSelector.value = userBackgroundPattern;
+        // Set initial background preview on selector
+        const initialPattern = BACKGROUND_PATTERNS[userBackgroundPattern];
+        patternSelector.style.backgroundImage = `url('${initialPattern}')`;
+
+        // Add event listener for background pattern changes
+        patternSelector.addEventListener('change', async (event) => {
+            const selectedPattern = event.target.value;
+            applyBackgroundPattern(selectedPattern);
+            await saveUserBackgroundPatternPreference(selectedPattern);
         });
     }
 }
