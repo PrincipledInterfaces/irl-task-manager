@@ -81,6 +81,9 @@ onAuthStateChanged(auth, async (user) => {
             // Setup report button
             setupReportButton();
 
+            // Setup settings button
+            setupSettingsButton();
+
             // Setup tab switching
             setupTabs();
 
@@ -129,6 +132,33 @@ function setupReportButton() {
         reportButton.addEventListener('click', () => {
             showReportDialog(currentUser);
         });
+    }
+}
+
+// Setup settings button functionality
+function setupSettingsButton() {
+    const settingsButtons = document.querySelectorAll('.circle-button');
+    settingsButtons.forEach(button => {
+        // Find the cog button specifically
+        if (button.innerHTML.includes('fa-cog')) {
+            button.addEventListener('click', () => {
+                const settingsDialog = document.getElementById('settingsDialog');
+                if (settingsDialog) {
+                    settingsDialog.showModal();
+                }
+            });
+        }
+    });
+
+    // Setup close button for settings dialog
+    const settingsDialog = document.getElementById('settingsDialog');
+    if (settingsDialog) {
+        const closeButton = settingsDialog.querySelector('button[aria-label="Close"]');
+        if (closeButton) {
+            closeButton.addEventListener('click', () => {
+                settingsDialog.close();
+            });
+        }
     }
 }
 
@@ -1315,6 +1345,11 @@ function openTaskDialog(taskId) {
         dialogTitle.textContent = 'Create New Task';
         deleteButton.style.display = 'none';
 
+        // Set default due date to today at 8:00 PM
+        const defaultDueDate = new Date();
+        defaultDueDate.setHours(20, 0, 0, 0); // Set to 8:00 PM
+        const localDatetime = new Date(defaultDueDate.getTime() - (defaultDueDate.getTimezoneOffset() * 60000)).toISOString().slice(0, 16);
+
         // Reset form
         document.getElementById('taskName').textContent = 'New Task';
         document.getElementById('taskPriority').checked = false;
@@ -1322,7 +1357,7 @@ function openTaskDialog(taskId) {
         document.getElementById('taskDescription').textContent = 'Task Description goes here :)';
         document.getElementById('taskHours').value = 4;
         document.getElementById('taskApprentice').checked = false;
-        document.getElementById('taskDueDate').value = '';
+        document.getElementById('taskDueDate').value = localDatetime;
         document.getElementById('taskNonflexible').checked = false;
         document.getElementById('taskRecurring').checked = false;
         document.getElementById('recurrenceOptions').style.display = 'none';

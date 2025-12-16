@@ -86,8 +86,9 @@
         <div style="display: flex; justify-content: space-between; align-items: center;">
             <h1>My Tasks</h1>
             <div style="display: flex; gap: 10px;">
+                <button id="reportButton" class="secondary circle-button"><i class="fa-solid fa-flag"></i></button>
+                <button class="circle-button"><i class="fa-solid fa-cog"></i></button>
                 <a href="board"><button><i class="fa-solid fa-border-all"></i> Available Tasks</button></a>
-                <button id="reportButton" class="secondary"><i class="fa-solid fa-flag"></i> Report Issue</button>
                 <button style="background-color: rgb(255, 93, 93); border-color: rgb(255, 93, 93);"><i class="fa-solid fa-user"></i> Log Out</button>
             </div>
         </div>
@@ -129,6 +130,23 @@
             </div>
         </div>
     </main>
+    <dialog id="settingsDialog">
+        <article>
+            <header>
+                <button aria-label="Close" rel="prev" id="closeSettingsDialog"></button>
+                <p>
+                    <strong>Settings</strong>
+                </p>
+            </header>
+            <h5>Visual Options:</h5>
+            <label for="themeSelector">Theme:</label>
+            <select id="themeSelector">
+                <!-- Theme options will be populated by themes.js -->
+            </select>
+            <p>*You may need to refresh the page to fully apply a theme.</p>
+        </article>
+    </dialog>
+    <script type="module" src="themes.js"></script>
     <script type="module" src="staff.js"></script>
 </body>
 </html>

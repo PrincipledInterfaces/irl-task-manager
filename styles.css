@@ -196,3 +196,39 @@ progress {
 
 /* For items beyond 10, continue with same delay */
 .stagger-fade-in:nth-child(n+11) { animation-delay: 0.5s; }
+
+.circle-button {
+  /* 1. Ensure the width and height are equal to create a square base */
+  width: 60px;
+  height: 60px;
+  
+  /* 2. Set the border-radius to 50% to turn the square into a circle */
+  border-radius: 50%;
+  
+  /* 3. Optional: Add styling for appearance and centering content */
+  
+  color: white;
+  border: none;
+  text-align: center;
+  font-size: 24px;
+  cursor: pointer;
+  display: inline-flex; /* Use flexbox for easy centering */
+  justify-content: center; /* Center horizontally */
+  align-items: center; /* Center vertically */
+  text-decoration: none; /* Remove underline for anchor tags */
+}
+
+/* button spins on hover */
+.circle-button:hover {
+  animation: spin 1s linear infinite;
+}
+
+@keyframes spin {
+  from {
+    transform: rotate(0deg);
+  }
+  to {
+    transform: rotate(360deg);
+  }
+}
+

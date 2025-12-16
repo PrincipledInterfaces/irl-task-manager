@@ -43,6 +43,9 @@ onAuthStateChanged(auth, async (user) => {
             // Setup report button
             setupReportButton();
 
+            // Setup settings button
+            setupSettingsButton();
+
             // Check and show version popup if needed
             await checkAndShowVersionPopup(currentUser);
         }
@@ -59,6 +62,33 @@ function setupReportButton() {
         reportButton.addEventListener('click', () => {
             showReportDialog(currentUser);
         });
+    }
+}
+
+// Setup settings button functionality
+function setupSettingsButton() {
+    const settingsButtons = document.querySelectorAll('.circle-button');
+    settingsButtons.forEach(button => {
+        // Find the cog button specifically
+        if (button.innerHTML.includes('fa-cog')) {
+            button.addEventListener('click', () => {
+                const settingsDialog = document.getElementById('settingsDialog');
+                if (settingsDialog) {
+                    settingsDialog.showModal();
+                }
+            });
+        }
+    });
+
+    // Setup close button for settings dialog
+    const settingsDialog = document.getElementById('settingsDialog');
+    if (settingsDialog) {
+        const closeButton = settingsDialog.querySelector('button[aria-label="Close"]');
+        if (closeButton) {
+            closeButton.addEventListener('click', () => {
+                settingsDialog.close();
+            });
+        }
     }
 }
 
