@@ -138,7 +138,17 @@ async function sendTaskNotification(eventType, taskData, userData, additionalDat
         // Convert Firestore Timestamp to Date if needed
         let dueDateStr = '';
         if (taskData.due) {
-          const dueDate = taskData.due.toDate ? taskData.due.toDate() : (taskData.due._seconds ? new Date(taskData.due._seconds * 1000) : new Date(taskData.due));
+          let dueDate;
+          if (taskData.due.toDate) {
+            // Firestore Timestamp object with toDate() method
+            dueDate = taskData.due.toDate();
+          } else if (taskData.due._seconds !== undefined) {
+            // Serialized Firestore Timestamp (has _seconds property)
+            dueDate = new Date(taskData.due._seconds * 1000);
+          } else {
+            // Plain date string or timestamp
+            dueDate = new Date(taskData.due);
+          }
           dueDateStr = `, due ${dueDate.toLocaleDateString()}`;
         }
         message = `${userMention} You've been assigned to task: *${taskData.title}* (${taskData.hours || 0} hours${dueDateStr})`;
