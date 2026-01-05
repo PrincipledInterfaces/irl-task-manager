@@ -445,7 +445,7 @@ async function handleClaim(event) {
                     taskData: {
                         title: task.title,
                         hours: task.hours,
-                        due: task.due
+                        due: task.due?.toDate?.()?.toISOString() || null
                     },
                     userData: {
                         email: currentUser.email,

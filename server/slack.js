@@ -105,9 +105,36 @@ async function findSlackUser(email, fullName) {
           console.log(`[Slack] Error searching by reversed name: ${reversedError.message}`);
         }
       }
+
+      // Strategy 4: Try first name only (fallback for cases like "Hannah Follmar" -> "Hannah")
+      if (nameParts.length >= 1) {
+        const firstName = nameParts[0];
+        try {
+          console.log(`[Slack] Searching for user by first name: ${firstName}`);
+          const result = await slackClient.users.list();
+
+          if (result.ok && result.members) {
+            const lowerFirstName = firstName.toLowerCase();
+            const user = result.members.find(member =>
+              !member.deleted &&
+              !member.is_bot &&
+              (member.name?.toLowerCase() === lowerFirstName ||
+               member.real_name?.toLowerCase() === lowerFirstName ||
+               member.profile?.display_name?.toLowerCase() === lowerFirstName)
+            );
+
+            if (user) {
+              console.log(`[Slack] ✓ Found user by first name match: ${user.name} (${user.id})`);
+              return { found: true, mention: `<@${user.id}>`, userId: user.id, userName: user.name };
+            }
+          }
+        } catch (firstNameError) {
+          console.log(`[Slack] Error searching by first name: ${firstNameError.message}`);
+        }
+      }
     }
 
-    // Strategy 4: Fallback - return plain name without @ mention
+    // Strategy 5: Fallback - return plain name without @ mention
     console.log(`[Slack] User not found in Slack workspace, using plain name: ${fullName}`);
     return { found: false, mention: fullName };
 
@@ -135,21 +162,16 @@ async function sendTaskNotification(eventType, taskData, userData, additionalDat
 
     switch (eventType) {
       case 'task-assigned':
-        // Convert Firestore Timestamp to Date if needed
+        // Parse due date from ISO string
         let dueDateStr = '';
         if (taskData.due) {
-          let dueDate;
-          if (taskData.due.toDate) {
-            // Firestore Timestamp object with toDate() method
-            dueDate = taskData.due.toDate();
-          } else if (taskData.due._seconds !== undefined) {
-            // Serialized Firestore Timestamp (has _seconds property)
-            dueDate = new Date(taskData.due._seconds * 1000);
+          const dueDate = new Date(taskData.due);
+          // Validate the date
+          if (!isNaN(dueDate.getTime())) {
+            dueDateStr = `, due ${dueDate.toLocaleDateString()}`;
           } else {
-            // Plain date string or timestamp
-            dueDate = new Date(taskData.due);
+            console.warn(`[Slack] Invalid due date received: ${taskData.due}`);
           }
-          dueDateStr = `, due ${dueDate.toLocaleDateString()}`;
         }
         message = `${userMention} You've been assigned to task: *${taskData.title}* (${taskData.hours || 0} hours${dueDateStr})`;
         break;

@@ -1688,7 +1688,7 @@ async function saveTask() {
                                     taskData: {
                                         title: taskData.title,
                                         hours: taskData.hours,
-                                        due: taskData.due
+                                        due: taskData.due?.toDate?.()?.toISOString() || null
                                     },
                                     userData: {
                                         email: user.email,
@@ -1828,7 +1828,7 @@ async function saveTask() {
                                     taskData: {
                                         title: taskData.title,
                                         hours: taskData.hours,
-                                        due: taskData.due
+                                        due: taskData.due?.toDate?.()?.toISOString() || null
                                     },
                                     userData: {
                                         email: user.email,
