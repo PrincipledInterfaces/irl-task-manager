@@ -144,6 +144,7 @@ async function getLocations() {
     }
 
     const locationsData = await locationsResponse.json();
+    console.log('[WhenIWork] Full locations API response:', locationsData);
     locations = locationsData.locations || [];
 
     // Set default location to the first one
@@ -170,6 +171,9 @@ async function getShifts(startDate, endDate) {
       end: endDate || new Date(Date.now() + 30*24*60*60*1000).toISOString().split('T')[0] // Default to 30 days from now
     });
 
+    console.log(`[WhenIWork] Fetching shifts with params:`, { start: startDate, end: endDate });
+    console.log(`[WhenIWork] Request URL: ${shiftsUrl}?${params}`);
+
     const shiftsResponse = await fetch(`${shiftsUrl}?${params}`, {
       headers: {
         'W-Token': token,
@@ -177,12 +181,17 @@ async function getShifts(startDate, endDate) {
       }
     });
 
+    console.log(`[WhenIWork] Shifts API response status: ${shiftsResponse.status}`);
+
     if (!shiftsResponse.ok) {
+      const errorText = await shiftsResponse.text();
+      console.error('[WhenIWork] Shifts API error:', shiftsResponse.status, errorText);
       throw new Error(`Failed to fetch shifts: ${shiftsResponse.status}`);
     }
 
     const shiftsData = await shiftsResponse.json();
-    console.log(`Fetched ${shiftsData.shifts?.length || 0} shifts`);
+    console.log(`[WhenIWork] Full shifts API response:`, shiftsData);
+    console.log(`[WhenIWork] Fetched ${shiftsData.shifts?.length || 0} shifts`);
     return shiftsData;
   } catch (error) {
     console.error('Error fetching shifts:', error);
