@@ -115,7 +115,7 @@ body {
   min-height: 100vh;
 
   /* subtle slow pan */
-  animation: bg-pan 90s linear infinite;
+  animation: bg-pan 10s linear infinite;
   will-change: background-position;
 }
 
