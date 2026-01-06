@@ -243,9 +243,25 @@ async function initialize() {
     await getLocations();
 
     // Fetch shifts for a wide date range (academic year)
+    // Academic year runs Aug-July, so if we're before August, use last year's Aug as start
     const now = new Date();
-    const startDate = new Date(now.getFullYear(), 7, 1); // Aug 1 this year
-    const endDate = new Date(now.getFullYear() + 1, 7, 31); // July 31 next year
+    const currentMonth = now.getMonth(); // 0-11 (0 = January, 7 = August)
+
+    let academicYearStart, academicYearEnd;
+    if (currentMonth >= 7) {
+      // We're in Aug-Dec, so academic year is THIS Aug to NEXT Aug
+      academicYearStart = new Date(now.getFullYear(), 7, 1); // Aug 1 this year
+      academicYearEnd = new Date(now.getFullYear() + 1, 7, 31); // July 31 next year
+    } else {
+      // We're in Jan-Jul, so academic year is LAST Aug to THIS Aug
+      academicYearStart = new Date(now.getFullYear() - 1, 7, 1); // Aug 1 last year
+      academicYearEnd = new Date(now.getFullYear(), 7, 31); // July 31 this year
+    }
+
+    const startDate = academicYearStart;
+    const endDate = academicYearEnd;
+
+    console.log(`[WhenIWork] Fetching shifts for academic year: ${startDate.toLocaleDateString()} - ${endDate.toLocaleDateString()}`);
 
     const shiftsData = await getShifts(
       startDate.toISOString().split('T')[0],
