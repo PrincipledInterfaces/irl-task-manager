@@ -1088,11 +1088,29 @@ function renderTasksTab() {
     // Update greeting
     taskGreeting.textContent = `Showing ${filteredTasks.length} task${filteredTasks.length !== 1 ? 's' : ''} (${activeTasks.length} active).`;
 
-    // Sort tasks: incomplete first, then by due date
+    // Sort tasks: unclaimed (with open slots) first, then by due date (soonest first)
     const sortedTasks = [...filteredTasks].sort((a, b) => {
+        // First, separate completed from incomplete
         if (a.completed !== b.completed) {
             return a.completed ? 1 : -1;
         }
+
+        // For incomplete tasks, check if they have open slots
+        if (!a.completed && !b.completed) {
+            const aAssigned = (a.assignedTo || []).length;
+            const aSlots = a.slots || 1;
+            const bAssigned = (b.assignedTo || []).length;
+            const bSlots = b.slots || 1;
+
+            const aHasOpenSlots = aAssigned < aSlots;
+            const bHasOpenSlots = bAssigned < bSlots;
+
+            // Tasks with open slots come first
+            if (aHasOpenSlots && !bHasOpenSlots) return -1;
+            if (!aHasOpenSlots && bHasOpenSlots) return 1;
+        }
+
+        // Within same completion and claim status, sort by due date (soonest first)
         if (a.due && b.due) {
             return a.due.toDate() - b.due.toDate();
         }

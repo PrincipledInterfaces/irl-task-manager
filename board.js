@@ -317,6 +317,27 @@ function renderBoard() {
     // Apply user-defined filters
     activeTasks = filterTasks(activeTasks);
 
+    // Sort tasks: unclaimed first, then by due date (soonest first)
+    activeTasks.sort((a, b) => {
+        const aAssigned = (a.assignedTo || []).length;
+        const aSlots = a.workerSlots || 1;
+        const bAssigned = (b.assignedTo || []).length;
+        const bSlots = b.workerSlots || 1;
+
+        const aHasOpenSlots = aAssigned < aSlots;
+        const bHasOpenSlots = bAssigned < bSlots;
+
+        // Unclaimed (has open slots) tasks come first
+        if (aHasOpenSlots && !bHasOpenSlots) return -1;
+        if (!aHasOpenSlots && bHasOpenSlots) return 1;
+
+        // Within same claim status, sort by due date (soonest first)
+        const aDue = a.due ? (a.due.toDate ? a.due.toDate() : new Date(a.due)) : new Date(8640000000000000); // Max date if no due
+        const bDue = b.due ? (b.due.toDate ? b.due.toDate() : new Date(b.due)) : new Date(8640000000000000);
+
+        return aDue - bDue;
+    });
+
     console.log("Active (non-completed) tasks after filtering:", activeTasks.length);
     console.log("Active tasks:", activeTasks);
     if (activeTasks.length === 0) {

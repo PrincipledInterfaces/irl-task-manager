@@ -115,14 +115,14 @@ body {
   min-height: 100vh;
 
   /* subtle slow pan */
-  animation: bg-pan 10s linear infinite;
+  animation: bg-pan 120s linear infinite;
   will-change: background-position;
 }
 
 /* gentle diagonal pan of the tiled background */
 @keyframes bg-pan {
   from { background-position: 0 0; }
-  to   { background-position: 100% 100%; }
+  to   { background-position: 400px 400px; }
 }
 
 /* respect user motion preferences */
