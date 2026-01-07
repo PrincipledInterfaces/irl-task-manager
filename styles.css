@@ -110,10 +110,24 @@ body {
   /* Background image will be set dynamically by themes.js */
   background-repeat: repeat;
   background-position: 0 0;
-  background-size: 412px 412px; /* Match actual tile.png size */
+  background-size: auto;
   /* ensure the element is tall enough to show the background */
   min-height: 100vh;
-  /* Animation will be controlled by JavaScript for consistent cross-device speed */
+
+  /* subtle slow pan */
+  animation: bg-pan 120s linear infinite;
+  will-change: background-position;
+}
+
+/* gentle diagonal pan of the tiled background */
+@keyframes bg-pan {
+  from { background-position: 0 0; }
+  to   { background-position: 100% 100%; }
+}
+
+/* respect user motion preferences */
+@media (prefers-reduced-motion: reduce) {
+  body { animation: none; }
 }
 
 progress {
