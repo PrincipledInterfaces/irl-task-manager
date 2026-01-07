@@ -122,7 +122,7 @@ body {
 /* gentle diagonal pan of the tiled background */
 @keyframes bg-pan {
   from { background-position: 0 0; }
-  to   { background-position: 400px 400px; }
+  to   { background-position: 100% 100%; }
 }
 
 /* respect user motion preferences */
