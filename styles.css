@@ -115,20 +115,37 @@ body {
   /* ensure the element is tall enough to show the background */
   min-height: 100vh;
 
-  /* slow pan */
-  animation: bg-pan 120s linear infinite;
-  will-change: background-position;
+  /* No animation on body itself */
+  position: relative;
 }
 
-/* gentle diagonal pan of the tiled background */
+/* Animated background layer using ::before pseudo-element */
+body::before {
+  content: '';
+  position: fixed;
+  top: 0;
+  left: 0;
+  width: 100%;
+  height: 100%;
+  background-image: inherit;
+  background-repeat: repeat;
+  background-size: 400px 400px;
+  z-index: -1;
+
+  /* Use transform for hardware-accelerated, consistent animation */
+  animation: bg-pan 120s linear infinite;
+  will-change: transform;
+}
+
+/* gentle diagonal pan using transform (GPU-accelerated) */
 @keyframes bg-pan {
-  from { background-position: 0 0; }
-  to   { background-position: 100% 100%; }
+  from { transform: translate(0, 0); }
+  to   { transform: translate(400px, 400px); }
 }
 
 /* respect user motion preferences */
 @media (prefers-reduced-motion: reduce) {
-  body { animation: none; }
+  body::before { animation: none; }
 }
 
 progress {
