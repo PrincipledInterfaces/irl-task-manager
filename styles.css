@@ -110,11 +110,12 @@ body {
   /* Background image will be set dynamically by themes.js */
   background-repeat: repeat;
   background-position: 0 0;
-  background-size: auto;
+  /* Fixed size ensures consistent animation speed across all devices/resolutions */
+  background-size: 400px 400px;
   /* ensure the element is tall enough to show the background */
   min-height: 100vh;
 
-  /* subtle slow pan */
+  /* slow pan */
   animation: bg-pan 120s linear infinite;
   will-change: background-position;
 }
