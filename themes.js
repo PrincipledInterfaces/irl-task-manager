@@ -184,9 +184,7 @@ function applyTheme(themeName) {
 function applyBackgroundPattern(patternName) {
     const patternUrl = BACKGROUND_PATTERNS[patternName];
     if (patternUrl) {
-        // Set background image as a CSS variable so ::before can access it
-        document.documentElement.style.setProperty('--bg-pattern-url', `url('${patternUrl}')`);
-
+        document.body.style.backgroundImage = `url('${patternUrl}')`;
         // Ensure body uses the theme's background color
         const bgColor = getComputedStyle(document.documentElement).getPropertyValue('--pico-background-color');
         if (bgColor) {

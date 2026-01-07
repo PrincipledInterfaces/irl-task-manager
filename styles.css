@@ -107,40 +107,13 @@ details summary::-webkit-details-marker {
 }
 
 body {
+  /* Background image will be set dynamically by themes.js */
+  background-repeat: repeat;
+  background-position: 0 0;
+  background-size: 412px 412px; /* Match actual tile.png size */
   /* ensure the element is tall enough to show the background */
   min-height: 100vh;
-  /* No animation on body itself */
-  position: relative;
-}
-
-/* Animated background layer using ::before pseudo-element */
-body::before {
-  content: '';
-  position: fixed;
-  top: 0;
-  left: 0;
-  width: 100%;
-  height: 100%;
-  /* Background image set via CSS variable by themes.js */
-  background-image: var(--bg-pattern-url);
-  background-repeat: repeat;
-  background-size: 400px 400px;
-  z-index: -1;
-
-  /* Use transform for hardware-accelerated, consistent animation */
-  animation: bg-pan 120s linear infinite;
-  will-change: transform;
-}
-
-/* gentle diagonal pan using transform (GPU-accelerated) */
-@keyframes bg-pan {
-  from { transform: translate(0, 0); }
-  to   { transform: translate(400px, 400px); }
-}
-
-/* respect user motion preferences */
-@media (prefers-reduced-motion: reduce) {
-  body::before { animation: none; }
+  /* Animation will be controlled by JavaScript for consistent cross-device speed */
 }
 
 progress {
