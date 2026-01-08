@@ -5,6 +5,22 @@
 :root {
   /* Customize Pico's default rounded corners if desired */
   --pico-border-radius: 1rem;
+
+  /* Force Pico to ignore OS color scheme preferences */
+  color-scheme: light dark;
+}
+
+/* Override Pico's prefers-color-scheme media queries to prevent OS interference */
+@media (prefers-color-scheme: light) {
+  :root:not([data-theme]) {
+    color-scheme: light;
+  }
+}
+
+@media (prefers-color-scheme: dark) {
+  :root:not([data-theme]) {
+    color-scheme: dark;
+  }
 }
 
 /* Badge/Tag Components - Inline colored text boxes */

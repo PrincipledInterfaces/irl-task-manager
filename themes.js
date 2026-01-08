@@ -158,6 +158,13 @@ const THEMES = {
 function applyTheme(themeName) {
     const theme = THEMES[themeName];
     if (theme) {
+        // Determine if this is a light or dark theme based on background color
+        const bgColor = theme['--pico-background-color'];
+        const isDarkTheme = bgColor && (bgColor.startsWith('#') && parseInt(bgColor.slice(1, 3), 16) < 128);
+
+        // Set data-theme attribute to override Pico's color-scheme detection
+        document.documentElement.setAttribute('data-theme', isDarkTheme ? 'dark' : 'light');
+
         // Apply each CSS variable directly to the document root
         Object.entries(theme).forEach(([prop, value]) => {
             if (value && value !== '') {
@@ -174,7 +181,7 @@ function applyTheme(themeName) {
             document.documentElement.classList.remove('theme-transitioning');
         });
 
-        console.log(`Theme applied: ${themeName}`);
+        console.log(`Theme applied: ${themeName} (${isDarkTheme ? 'dark' : 'light'} mode)`);
     } else {
         console.warn(`Theme not found: ${themeName}`);
     }
