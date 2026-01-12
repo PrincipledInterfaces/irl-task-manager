@@ -7,6 +7,8 @@
     <link rel="stylesheet" href="styles.css">
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.1/css/all.min.css">
     <link rel="icon" type="image/png" href="head.png">
+    <link rel="stylesheet" href="./syncro.css" />
+    <script src="./syncro.js"></script>
     <style>
         /* Circular progress bar styling */
         .progress-row {
@@ -109,8 +111,15 @@
                     </svg>
                     <div class="percentage" id="weeklyPercent">0%</div>
                 </div>
-                
             </div>
+            <details>
+                <summary>View your <em data-tooltip="See how you've allocated your time this week.">weekly hours breakdown</em></summary>
+                <article>
+                    <div id="weeklyBreakdown">
+                        <!-- fills in with breakdown -->
+                    </div>
+                </article>
+            </details>
         </article>
         <details>
             <summary>View your <em data-tooltip="Assigned to you by managers and determine what tasks you can claim.">skills</em></summary>

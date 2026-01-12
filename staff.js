@@ -187,7 +187,7 @@ function renderWeeklyHours() {
     console.log(`Tasks assigned to current user: ${userAssignedTasks.length}`, userAssignedTasks);
 
     // get hours from wheniwork shifts (excluding task manager created shifts)
-    let whenIWorkHours = 0;
+    let whenIWorkHours = 0; // use also in breakdown
     if (currentUser.wiwUserId) {
         // Find user by wiwUserId in the WhenIWork users list
         const wiwUser = getUserById(currentUser.wiwUserId);
@@ -213,6 +213,13 @@ function renderWeeklyHours() {
 
     weeklyHours += whenIWorkHours;
 
+
+    // breakdown hours vars
+    let maintenenceHours = 0;
+    let projectHours = 0;
+    let workshopHours = 0;
+    let otherHours = 0;
+
     // Now add completed tasks hours
     console.log('Checking completed tasks for current user:');
 
@@ -226,6 +233,20 @@ function renderWeeklyHours() {
 
                 if (isThisWeek) {
                     weeklyHours += Number(task.hours) || 0;
+                    // Add to breakdown categories based on task category
+                    switch (task.category) {
+                        case 'Maintenance':
+                            maintenenceHours += Number(task.hours) || 0;
+                            break;
+                        case 'Project':
+                            projectHours += Number(task.hours) || 0;
+                            break;
+                        case 'Workshop':
+                            workshopHours += Number(task.hours) || 0;
+                            break;
+                        default:
+                            otherHours += Number(task.hours) || 0;
+                    }
                 }
             } else {
                 // Fallback for old tasks: use due date if completedDate doesn't exist
@@ -249,6 +270,23 @@ function renderWeeklyHours() {
 
     // Update circular progress
     updateCircularProgress(weeklyHours, allowedHours);
+
+    // Update breakdown stepped bar
+    const breakdownElement = document.getElementById('weeklyBreakdown');
+    if (breakdownElement) {
+        const breakdownData = {
+            title: "Weekly Hours Breakdown",
+            catagories: [
+                { name: "WhenIWork Shifts", value: whenIWorkHours, color: "#36a2eb" },
+                { name: "Maintenance", value: maintenenceHours, color: "#4bc0c0" },
+                { name: "Projects", value: projectHours, color: "#ffcd56" },
+                { name: "Workshop", value: workshopHours, color: "#ff9f40" },
+                { name: "Other", value: otherHours, color: "#9966ff" }
+            ]
+        };
+        breakdownElement.innerHTML = `<div data-stepped-bar='${JSON.stringify(breakdownData)}'></div>`;
+        initSteppedProgress();
+    }
 }
 
 // Helper to show current week range
