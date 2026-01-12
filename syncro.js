@@ -40,6 +40,9 @@
     initSteppedProgress();
   });
 
+  // Expose initSteppedProgress globally so it can be called from other scripts
+  window.initSteppedProgress = initSteppedProgress;
+
   function initSteppedProgress() {
     [].forEach.call(
       document.querySelectorAll("[data-stepped-bar]"),
