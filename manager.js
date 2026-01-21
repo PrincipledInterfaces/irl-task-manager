@@ -1278,15 +1278,41 @@ function setupTaskDialog() {
 }
 
 // Open task dialog for editing or creating
-function openTaskDialog(taskId) {
+async function openTaskDialog(taskId) {
     const dialog = document.getElementById('editTask');
     const dialogTitle = document.getElementById('taskDialogTitle');
     const deleteButton = document.getElementById('deleteTaskBtn');
 
     if (taskId) {
-        // Edit existing task
-        selectedTask = allTasks.find(t => t.id === taskId);
-        if (!selectedTask) return;
+        // Edit existing task - fetch fresh data from Firestore to avoid stale data issues
+        try {
+            const taskDoc = await getDoc(doc(db, "tasks", taskId));
+            if (!taskDoc.exists()) {
+                alert("Task not found!");
+                return;
+            }
+
+            // Create a deep copy of the task data to avoid reference issues
+            const freshTaskData = taskDoc.data();
+            selectedTask = {
+                id: taskDoc.id,
+                ...freshTaskData,
+                // Deep copy arrays to prevent reference issues
+                assignedTo: freshTaskData.assignedTo ? [...freshTaskData.assignedTo] : [],
+                assignedToNames: freshTaskData.assignedToNames ? [...freshTaskData.assignedToNames] : [],
+                requiredSkills: freshTaskData.requiredSkills ? [...freshTaskData.requiredSkills] : []
+            };
+
+            // Update allTasks with fresh data
+            const taskIndex = allTasks.findIndex(t => t.id === taskId);
+            if (taskIndex !== -1) {
+                allTasks[taskIndex] = { ...selectedTask };
+            }
+        } catch (error) {
+            console.error("Error fetching fresh task data:", error);
+            alert("Error loading task: " + error.message);
+            return;
+        }
 
         dialogTitle.textContent = 'Edit Task';
         deleteButton.style.display = 'block';
@@ -1622,14 +1648,30 @@ async function saveTask() {
         }
 
         if (selectedTask && selectedTask.id) {
-            // Get the ORIGINAL state from allTasks before any toggles were made
-            const originalTask = allTasks.find(t => t.id === selectedTask.id);
-            const oldAssignedUsers = originalTask ? (originalTask.assignedTo || []) : [];
+            // Fetch fresh data from Firestore to get the REAL current state
+            // This prevents stale data issues when users claim tasks after manager loaded the page
+            let oldAssignedUsers = [];
+            try {
+                const freshTaskDoc = await getDoc(doc(db, "tasks", selectedTask.id));
+                if (freshTaskDoc.exists()) {
+                    const freshData = freshTaskDoc.data();
+                    oldAssignedUsers = freshData.assignedTo || [];
+                    console.log('Fetched fresh assignment data from Firestore:', oldAssignedUsers);
+                } else {
+                    console.warn('Task not found in Firestore during save - using empty assignments');
+                }
+            } catch (error) {
+                console.error('Error fetching fresh task data for sync:', error);
+                // Fallback to allTasks data if fetch fails
+                const originalTask = allTasks.find(t => t.id === selectedTask.id);
+                oldAssignedUsers = originalTask ? (originalTask.assignedTo || []) : [];
+            }
+
             const newAssignedUsers = taskData.assignedTo || [];
 
             console.log('Syncing assignedJobIds...');
-            console.log('Old assigned users:', oldAssignedUsers);
-            console.log('New assigned users:', newAssignedUsers);
+            console.log('Old assigned users (from Firestore):', oldAssignedUsers);
+            console.log('New assigned users (from dialog):', newAssignedUsers);
 
             // Update existing task in Firestore
             await updateDoc(doc(db, "tasks", selectedTask.id), taskData);
@@ -1641,8 +1683,19 @@ async function saveTask() {
                 allTasks[taskIndex] = { ...allTasks[taskIndex], ...taskData };
             }
 
-            // Initialize wiwShiftIDs object if it doesn't exist
-            const wiwShiftIDs = originalTask ? (originalTask.wiwShiftIDs || {}) : {};
+            // Get wiwShiftIDs from fresh Firestore data (fetched above)
+            let wiwShiftIDs = {};
+            try {
+                const freshTaskDoc = await getDoc(doc(db, "tasks", selectedTask.id));
+                if (freshTaskDoc.exists()) {
+                    wiwShiftIDs = freshTaskDoc.data().wiwShiftIDs || {};
+                }
+            } catch (error) {
+                console.error('Error fetching wiwShiftIDs:', error);
+                // Fallback to allTasks data
+                const originalTask = allTasks.find(t => t.id === selectedTask.id);
+                wiwShiftIDs = originalTask ? (originalTask.wiwShiftIDs || {}) : {};
+            }
 
             // Add task to users who were newly assigned
             const usersToAdd = newAssignedUsers.filter(userId => !oldAssignedUsers.includes(userId));
