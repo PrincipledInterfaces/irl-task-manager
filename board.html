@@ -21,9 +21,10 @@
         </div>
 
         <!-- Filters Section -->
-        <details style="margin-bottom: 1.5rem; margin-top: 1rem;">
-            <summary><i class="fa-solid fa-filter"></i> Filter Tasks</summary>
-            <article style="margin-top: 0.5rem;">
+        <div style="display: flex; align-items: center; gap: 1rem; margin-bottom: 1.5rem; margin-top: 1rem;">
+            <details style="flex: 1;">
+                <summary><i class="fa-solid fa-filter"></i> Filter Tasks</summary>
+                <article style="margin-top: 0.5rem;">
                 <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(250px, 1fr)); gap: 1rem;">
                     <!-- Due Date Filter -->
                     <div>
@@ -92,7 +93,11 @@
                     <button id="applyFiltersBtn"><i class="fa-solid fa-check"></i> Apply Filters</button>
                 </div>
             </article>
-        </details>
+            </details>
+            <label style="white-space: nowrap; display: flex; align-items: center; gap: 0.5rem;">
+                <input type="checkbox" id="filterUnclaimedOnly"> Unclaimed only
+            </label>
+        </div>
 
         <div id="board-listings">
             <!-- Job listings will be rendered here by board.js oh yeah-->

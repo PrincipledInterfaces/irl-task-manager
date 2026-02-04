@@ -37,7 +37,8 @@ let taskFilters = {
     locations: ['IRL 1', 'IRL 2', 'Remote', 'custom'],
     categories: ['Workshop', 'Maintenance', 'Project', 'Media', 'Event', 'Other'],
     priorityOnly: false,
-    skills: []
+    skills: [],
+    unclaimedOnly: false
 };
 
 // Check auth state and redirect if not logged in
@@ -576,6 +577,15 @@ function setupTaskFilters() {
             renderBoard();
         });
     }
+
+    // Unclaimed only checkbox - triggers immediately
+    const unclaimedCheckbox = document.getElementById('filterUnclaimedOnly');
+    if (unclaimedCheckbox) {
+        unclaimedCheckbox.addEventListener('change', () => {
+            taskFilters.unclaimedOnly = unclaimedCheckbox.checked;
+            renderBoard();
+        });
+    }
 }
 
 // Apply current filter settings from UI
@@ -631,7 +641,8 @@ function clearTaskFilters() {
         locations: ['IRL 1', 'IRL 2', 'Remote', 'custom'],
         categories: ['Workshop', 'Maintenance', 'Project', 'Media', 'Event', 'Other'],
         priorityOnly: false,
-        skills: []
+        skills: [],
+        unclaimedOnly: false
     };
 
     // Reset UI
@@ -640,6 +651,7 @@ function clearTaskFilters() {
     document.getElementById('filterHoursMin').value = '';
     document.getElementById('filterHoursMax').value = '';
     document.getElementById('filterPriorityOnly').checked = false;
+    document.getElementById('filterUnclaimedOnly').checked = false;
 
     document.querySelectorAll('.filter-location').forEach(cb => cb.checked = true);
     document.querySelectorAll('.filter-category').forEach(cb => cb.checked = true);
@@ -651,6 +663,14 @@ function clearTaskFilters() {
 // Filter tasks based on current filter settings
 function filterTasks(tasks) {
     return tasks.filter(task => {
+        // Unclaimed only filter
+        if (taskFilters.unclaimedOnly) {
+            const assignedUsers = task.assignedTo || [];
+            const workerSlots = task.workerSlots || 1;
+            const hasOpenSlots = assignedUsers.length < workerSlots;
+            if (!hasOpenSlots) return false;
+        }
+
         // Due date filter
         if (taskFilters.dueFrom || taskFilters.dueTo) {
             if (!task.due) return false;
