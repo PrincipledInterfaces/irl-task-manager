@@ -291,7 +291,8 @@ function renderTeamList() {
     if (!teamContainer) return;
 
     // Filter out managers, only show regular users
-    const regularUsers = allUsers.filter(user => user.role !== "manager");
+    const regularUsersUNF = allUsers.filter(user => user.role !== "manager");
+    let regularUsers = regularUsersUNF.sort((a, b) => a.fullName.localeCompare(b.fullName));
 
     if (regularUsers.length === 0) {
         teamContainer.innerHTML = '<p>No team members found.</p>';
@@ -306,9 +307,9 @@ function renderTeamList() {
         );
         const taskCount = userTasks.length;
         var colors = ['green', 'yellow', 'red', 'purple', 'blue', 'pink', 'indigo'];
-        let badgeColor = colors[Math.random() * colors.length | 0]; // Default random color
-        if (taskCount >= 5) badgeColor = 'red';
-        else if (taskCount >= 3) badgeColor = 'yellow';
+        let badgeColor = 'green';
+        if (taskCount >= 8) badgeColor = 'red';
+        else if (taskCount >= 4) badgeColor = 'yellow';
 
         return `<a class="hoveranim user-link" href="#" data-user-id="${user.id}"><span class="badge badge-${badgeColor}"><i class="fa-solid fa-user"></i> ${user.fullName}</span></a>`;
     }).join('\n');
