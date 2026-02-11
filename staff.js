@@ -376,9 +376,9 @@ function renderJobCard(task) {
         assignmentSection += '</div>';
     }
 
-    // Conditional rendering: show priority badge if isPriority is true
-    const priorityBadge = task.isPriority
-        ? ` <span class="badge badge-yellow"><i class="fa-solid fa-triangle-exclamation"></i> High Priority</span>`
+    // Conditional rendering: show priority badge if priority is true
+    const priorityBadge = task.priority
+        ? ` <span class="badge badge-red"><i class="fa-solid fa-triangle-exclamation"></i> High Priority</span>`
         : '';
 
     return `
