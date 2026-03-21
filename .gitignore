@@ -1,7 +1,7 @@
-# Node modules (if you add npm later)
+# Node modules 
 node_modules/
 
-# Environment variables (if you decide to use them)
+# Environment variables 
 .env
 .env.local
 .claude/

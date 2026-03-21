@@ -511,18 +511,39 @@ async function processRecurringTasks() {
       console.log(`  Old due date: ${dueDate.toISOString()}`);
       console.log(`  New due date: ${nextDueDate.toISOString()}`);
 
-      // Update the original task with new due date and reset completion/assignments
-      await taskDoc.ref.update({
+      // Build the new task document, copying all relevant fields from the original
+      const newTaskData = {
+        title: task.title,
         due: admin.firestore.Timestamp.fromDate(nextDueDate),
+        recurring: true,
         completed: false,
         assignedTo: [],
         assignedToNames: []
-      });
+      };
 
-      console.log(`[Recurring Tasks] Updated "${task.title}" with new due date`);
+      // Copy over all optional task fields if they exist
+      const fieldsToCopy = [
+        'priority', 'category', 'icon', 'location', 'locationColor',
+        'description', 'hours', 'apprenticeTask', 'nonflexible', 'slots',
+        'requiredSkills', 'recurrenceFrequency', 'recurrenceDays'
+      ];
+      for (const field of fieldsToCopy) {
+        if (task[field] !== undefined) {
+          newTaskData[field] = task[field];
+        }
+      }
+
+      // Create the new task for the next occurrence
+      const newTaskRef = await tasksRef.add(newTaskData);
+      console.log(`[Recurring Tasks] Created new task "${task.title}" (id: ${newTaskRef.id}) with due date ${nextDueDate.toISOString()}`);
+
+      // Mark the original task as non-recurring so it stays intact (preserving its
+      // current assignments and completion state) and won't be processed again
+      await taskDoc.ref.update({ recurring: false });
+      console.log(`[Recurring Tasks] Marked original task "${task.title}" (id: ${task.id}) as non-recurring`);
 
       newTasks.push({
-        id: task.id,
+        id: newTaskRef.id,
         title: task.title,
         oldDueDate: dueDate,
         newDueDate: nextDueDate
