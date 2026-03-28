@@ -56,8 +56,8 @@ function buildEvents() {
                 if (!isTaskManagerShift) {
                     events.push({
                         title: shift.title || 'WhenIWork Shift',
-                        start: shift.start_time,
-                        end: shift.end_time,
+                        start: new Date(shift.start_time),
+                        end: new Date(shift.end_time),
                         backgroundColor: primaryColor,
                         borderColor: primaryColor,
                         textColor: '#ffffff',
