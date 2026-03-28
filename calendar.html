@@ -1,0 +1,232 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>My Calendar</title>
+    <link rel="stylesheet" href="styles.css">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.1/css/all.min.css">
+    <link rel="icon" type="image/png" href="head.png">
+    <link rel="stylesheet" href="./syncro.css" />
+    <script src="./syncro.js"></script>
+    <!-- FullCalendar -->
+    <link href='https://cdn.jsdelivr.net/npm/fullcalendar@6.1.15/index.global.min.css' rel='stylesheet' />
+    <script src='https://cdn.jsdelivr.net/npm/fullcalendar@6.1.15/index.global.min.js'></script>
+    <style>
+        /* FullCalendar theme integration via CSS variables */
+        .fc {
+            --fc-border-color: var(--pico-muted-border-color);
+            --fc-button-bg-color: var(--pico-primary);
+            --fc-button-border-color: var(--pico-primary);
+            --fc-button-hover-bg-color: var(--pico-primary-hover);
+            --fc-button-active-bg-color: var(--pico-primary-hover);
+            --fc-button-active-border-color: var(--pico-primary-hover);
+            --fc-button-text-color: var(--pico-primary-inverse, #fff);
+            --fc-page-bg-color: var(--pico-card-background-color);
+            --fc-neutral-bg-color: var(--pico-background-color);
+            --fc-neutral-text-color: var(--pico-muted-color);
+            --fc-list-event-hover-bg-color: var(--pico-muted-border-color);
+            --fc-today-bg-color: rgba(128, 128, 128, 0.08);
+            --fc-event-text-color: #ffffff;
+            --fc-highlight-color: rgba(128, 128, 128, 0.1);
+        }
+
+        /* Text color for calendar day/header text */
+        .fc .fc-toolbar-title {
+            color: var(--pico-color);
+            font-size: 1.2rem;
+        }
+
+        .fc .fc-col-header-cell-cushion,
+        .fc .fc-daygrid-day-number,
+        .fc .fc-list-day-cushion,
+        .fc .fc-list-event-title a,
+        .fc .fc-list-event-time {
+            color: var(--pico-color);
+            text-decoration: none;
+        }
+
+        .fc .fc-list-event-title a:hover {
+            text-decoration: underline;
+        }
+
+        .fc th {
+            color: var(--pico-color);
+            background: var(--pico-card-background-color);
+        }
+
+        .fc-theme-standard .fc-scrollgrid,
+        .fc-theme-standard td,
+        .fc-theme-standard th {
+            border-color: var(--pico-muted-border-color);
+        }
+
+        .fc .fc-button {
+            border-radius: 0.375rem;
+            font-size: 0.85rem;
+            padding: 0.35rem 0.75rem;
+        }
+
+        .fc .fc-button:focus {
+            box-shadow: none;
+        }
+
+        .fc .fc-daygrid-day:hover {
+            background-color: var(--fc-highlight-color);
+        }
+
+        .fc .fc-list-day-cushion {
+            background-color: var(--pico-card-background-color);
+        }
+
+        .fc .fc-list-empty {
+            background-color: var(--pico-card-background-color);
+            color: var(--pico-muted-color);
+        }
+
+        .fc .fc-event {
+            cursor: pointer;
+            border-radius: 0.25rem;
+        }
+
+        .fc .fc-timegrid-now-indicator-line {
+            border-color: var(--pico-primary);
+        }
+
+        .fc .fc-timegrid-now-indicator-arrow {
+            border-top-color: var(--pico-primary);
+            border-bottom-color: var(--pico-primary);
+        }
+
+        /* Calendar wrapper card */
+        #calendar-card {
+            padding: 1.5rem;
+        }
+
+        /* Legend */
+        .calendar-legend {
+            display: flex;
+            gap: 1.5rem;
+            flex-wrap: wrap;
+            margin-bottom: 1.25rem;
+            padding-bottom: 1rem;
+            border-bottom: 1px solid var(--pico-muted-border-color);
+        }
+
+        .legend-item {
+            display: flex;
+            align-items: center;
+            gap: 0.5rem;
+            font-size: 0.875rem;
+            color: var(--pico-color);
+        }
+
+        .legend-dot {
+            width: 14px;
+            height: 14px;
+            border-radius: 3px;
+            flex-shrink: 0;
+        }
+
+        /* Event detail dialog */
+        #eventDialog article {
+            max-width: 480px;
+        }
+
+        .event-detail-row {
+            display: flex;
+            gap: 0.5rem;
+            align-items: flex-start;
+            margin-bottom: 0.5rem;
+            font-size: 0.9rem;
+            color: var(--pico-color);
+        }
+
+        .event-detail-row i {
+            margin-top: 0.1rem;
+            flex-shrink: 0;
+            color: var(--pico-muted-color);
+            width: 16px;
+        }
+
+        .event-type-badge {
+            display: inline-block;
+            padding: 0.2rem 0.6rem;
+            border-radius: 0.25rem;
+            font-size: 0.75rem;
+            font-weight: 600;
+            margin-bottom: 0.75rem;
+        }
+    </style>
+</head>
+<body>
+    <main class="container">
+        <div style="display: flex; justify-content: space-between; align-items: center;">
+            <h1><i class="fa-solid fa-calendar-days"></i> My Calendar</h1>
+            <div style="display: flex; gap: 10px;">
+                <button id="reportButton" class="secondary circle-button"><i class="fa-solid fa-flag"></i></button>
+                <button id="settingsButton" class="circle-button"><i class="fa-solid fa-cog"></i></button>
+                <a href="staff"><button class="secondary"><i class="fa-solid fa-list-check"></i> My Tasks</button></a>
+                <button id="logoutButton" style="background-color: rgb(255, 93, 93); border-color: rgb(255, 93, 93);"><i class="fa-solid fa-user"></i> Log Out</button>
+            </div>
+        </div>
+        <br>
+
+        <article id="calendar-card">
+            <div class="calendar-legend">
+                <div class="legend-item">
+                    <div class="legend-dot" id="legend-wiw"></div>
+                    <span>WhenIWork Shifts</span>
+                </div>
+                <div class="legend-item">
+                    <div class="legend-dot" style="background-color: #ef4444;"></div>
+                    <span>Non-Flexible Tasks</span>
+                </div>
+                <div class="legend-item">
+                    <div class="legend-dot" style="background-color: #8b5cf6;"></div>
+                    <span>Task Due Dates</span>
+                </div>
+            </div>
+            <div id="calendar">
+                <div style="display:flex;justify-content:center;align-items:center;min-height:300px;">
+                    <div class="loader"></div>
+                </div>
+            </div>
+        </article>
+    </main>
+
+    <!-- Event Detail Dialog -->
+    <dialog id="eventDialog">
+        <article>
+            <header>
+                <button aria-label="Close" rel="prev" id="closeEventDialog"></button>
+                <p><strong id="eventDialogTitle">Event Details</strong></p>
+            </header>
+            <div id="eventDialogBody"></div>
+        </article>
+    </dialog>
+
+    <!-- Settings Dialog -->
+    <dialog id="settingsDialog">
+        <article>
+            <header>
+                <button aria-label="Close" rel="prev" id="closeSettingsDialog"></button>
+                <p><strong>Settings</strong></p>
+            </header>
+            <h5>Visual Options:</h5>
+            <label for="themeSelector">Theme:</label>
+            <select id="themeSelector">
+                <!-- Theme options will be populated by themes.js -->
+            </select>
+            <label for="backgroundPatternSelector">Background Pattern:</label>
+            <select id="backgroundPatternSelector" style="background-repeat: repeat; background-size: 50px; padding: 0.75rem;">
+                <!-- Pattern options will be populated by themes.js -->
+            </select>
+            <p>*You may need to refresh the page to fully apply changes.</p>
+        </article>
+    </dialog>
+
+    <script type="module" src="themes.js"></script>
+    <script type="module" src="calendar.js"></script>
+</body>
+</html>
