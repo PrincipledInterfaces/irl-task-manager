@@ -283,17 +283,13 @@ app.get('/api/quarter-dates', async (req, res) => {
       'Summer': 'SUMMER'
     };
 
-    // Extract start year from academic year string (e.g., "2025-2026" -> "2025")
-    // All quarters in an academic year use the start year in their naming
-    const [startYear] = targetYear.split('-');
-
     Object.entries(quarterMap).forEach(([quarterName, abbrev]) => {
-      // All quarters use the academic year start year (e.g., for 2025-2026, all quarters are named with 2025)
-      const year = startYear;
-
-      // Look for begin pattern with flexible matching
+      // Match by abbreviation only — allYearEvents is already filtered to the target academic year,
+      // so we don't need the year in the pattern. DePaul uses the academic-start year for Autumn
+      // (e.g. AQ2025) but the actual calendar year for Spring/Summer (e.g. SQ2026, SUMMER 2026),
+      // so constraining by year breaks spring and summer detection.
       // Matches: "BEGIN AQ2025 ALL CLASSES", "Begin SQ2026 Day & Evening Classes", "BEGIN SUMMER 2026 TERM"
-      const beginPattern = new RegExp(`BEGIN ${abbrev}\\s*${year}`, 'i');
+      const beginPattern = new RegExp(`BEGIN ${abbrev}`, 'i');
       const beginEvent = allYearEvents.find(e => e.LinkTitle && beginPattern.test(e.LinkTitle));
 
       console.log(`${quarterName}: Begin=${!!beginEvent}`);
