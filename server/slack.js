@@ -182,6 +182,7 @@ async function sendTaskNotification(eventType, taskData, userData, additionalDat
 
       case 'task-completed':
         // For completion, notify all assigned users
+        
         const assignedUsers = additionalData.assignedUsers || [];
         const mentions = [];
 
