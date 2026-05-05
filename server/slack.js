@@ -74,6 +74,30 @@ async function findSlackUser(email, fullName) {
             console.log(`[Slack] ✓ Found user by case-insensitive name match: ${user.name} (${user.id})`);
             return { found: true, mention: `<@${user.id}>`, userId: user.id, userName: user.name };
           }
+
+          // Try partial name matching for compound surnames (e.g. "Leo Walsh" vs "Leo Walsh Mendez")
+          // Checks if one name is a word-boundary prefix of the other in either direction
+          const matchesPrefix = (longer, shorter) =>
+            shorter.length > 0 &&
+            longer.startsWith(shorter) &&
+            (longer.length === shorter.length || longer[shorter.length] === ' ');
+
+          user = result.members.find(member => {
+            if (member.deleted || member.is_bot) return false;
+            const slackRealName = (member.real_name || '').toLowerCase().trim();
+            const slackDisplayName = (member.profile?.display_name || '').toLowerCase().trim();
+            return (
+              matchesPrefix(slackRealName, lowerFullName) ||
+              matchesPrefix(lowerFullName, slackRealName) ||
+              matchesPrefix(slackDisplayName, lowerFullName) ||
+              matchesPrefix(lowerFullName, slackDisplayName)
+            );
+          });
+
+          if (user) {
+            console.log(`[Slack] ✓ Found user by partial name match: ${user.name} (${user.id})`);
+            return { found: true, mention: `<@${user.id}>`, userId: user.id, userName: user.name };
+          }
         }
       } catch (nameError) {
         console.log(`[Slack] Error searching by name: ${nameError.message}`);
