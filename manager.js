@@ -819,9 +819,6 @@ function setupHoursCalculationSwitch() {
 }
 
 async function renderHours() {
-    console.log('======================================');
-    console.log('[Render Hours] Starting hour calculation...');
-    console.log('======================================');
 
     // Check if budget data is loaded
     if (!budgetData) {
@@ -829,9 +826,7 @@ async function renderHours() {
         return;
     }
 
-    console.log('[Render Hours] Budget data:', budgetData);
-    console.log('[Render Hours] Quarter dates:', quarterDates);
-    console.log(`[Render Hours] Total tasks to process: ${allTasks.length}`);
+
 
     // Check if we should include active tasks
     const includeActiveSwitch = document.getElementById('includeActiveHours');
@@ -867,8 +862,8 @@ async function renderHours() {
     allTasks.forEach(function(element, index) {
         // Determine if we should count this task
         const shouldCount = includeActive
-            ? !element.completed  // If including active, count all non-completed tasks
-            : element.completed;   // If not including active, only count completed tasks
+            ? element.isAssigned  // If including active, count all non-completed tasks
+            : element.completed && element.isAssigned;   // If not including active, only count completed tasks
 
         if (shouldCount) {
             let dateToCheck = null;
