@@ -862,8 +862,8 @@ async function renderHours() {
     allTasks.forEach(function(element, index) {
         // Determine if we should count this task
         const shouldCount = includeActive
-            ? element.isAssigned  // If including active, count all non-completed tasks
-            : element.completed && element.isAssigned;   // If not including active, only count completed tasks
+            ? element.assignedTo && element.assignedTo.length > 0
+            : element.completed && element.assignedTo && element.assignedTo.length > 0;
 
         if (shouldCount) {
             let dateToCheck = null;
